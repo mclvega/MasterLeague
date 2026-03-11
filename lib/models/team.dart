@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class Team {
   final String id;
   final String name;
@@ -71,6 +73,15 @@ class Team {
       'finances': finances?.toMap(),
       'competitionStats': competitionStats,
     };
+  }
+
+  // Métodos JSON para base de datos
+  String toJson() {
+    return json.encode(toMap());
+  }
+
+  factory Team.fromJson(String jsonString) {
+    return Team.fromMap(json.decode(jsonString));
   }
 
   Team copyWith({

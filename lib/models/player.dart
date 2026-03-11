@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class Player {
   final String id;
   final String name;
@@ -47,6 +49,15 @@ class Player {
       'nationality': nationality,
       'age': age,
     };
+  }
+
+  // Métodos JSON para base de datos
+  String toJson() {
+    return json.encode(toMap());
+  }
+
+  factory Player.fromJson(String jsonString) {
+    return Player.fromMap(json.decode(jsonString));
   }
 
   Player copyWith({

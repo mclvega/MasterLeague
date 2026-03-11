@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/player.dart';
 import '../providers/team_provider.dart';
+import '../utils/number_format_utils.dart';
 import '../utils/theme.dart';
 
 class PlayerCard extends StatelessWidget {
@@ -55,7 +56,7 @@ class PlayerCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            '\$${_formatPrice(player.price)}',
+                            '\$${NumberFormatUtils.money(player.price)}',
                             style: AppTheme.titleStyle.copyWith(
                               color: AppTheme.successColor,
                               fontWeight: FontWeight.bold,
@@ -145,16 +146,6 @@ class PlayerCard extends StatelessWidget {
     );
   }
 
-  String _formatPrice(double price) {
-    if (price >= 1000000) {
-      return '${(price / 1000000).toStringAsFixed(1)}M';
-    } else if (price >= 1000) {
-      return '${(price / 1000).toStringAsFixed(0)}K';
-    } else {
-      return price.toStringAsFixed(0);
-    }
-  }
-
   void _showPlayerDetails(BuildContext context) {
     showDialog(
       context: context,
@@ -216,7 +207,7 @@ class PlayerDetailsDialog extends StatelessWidget {
             _buildDetailRow('Nacionalidad', player.nationality),
             _buildDetailRow('Edad', '${player.age} años'),
             _buildDetailRow('Overall', player.overall.toString()),
-            _buildDetailRow('Precio', '\$${_formatPrice(player.price)}'),
+            _buildDetailRow('Precio', '\$${NumberFormatUtils.money(player.price)}'),
             const SizedBox(height: 20),
             Consumer<TeamProvider>(
               builder: (context, teamProvider, child) {
@@ -311,13 +302,4 @@ class PlayerDetailsDialog extends StatelessWidget {
     );
   }
 
-  String _formatPrice(double price) {
-    if (price >= 1000000) {
-      return '${(price / 1000000).toStringAsFixed(1)}M';
-    } else if (price >= 1000) {
-      return '${(price / 1000).toStringAsFixed(0)}K';
-    } else {
-      return price.toStringAsFixed(0);
-    }
-  }
 }

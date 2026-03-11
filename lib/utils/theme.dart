@@ -1,29 +1,34 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF2E7D32); // Verde fútbol
-  static const Color secondaryColor = Color(0xFF4CAF50); 
+  // Color principal azul moderno con letras blancas
+  static const Color primaryColor = Color(0xFF1976D2); // Azul moderno
+  static const Color secondaryColor = Color(0xFF42A5F5); // Azul claro 
   static const Color accentColor = Color(0xFFFFD700); // Dorado
   static const Color backgroundColor = Color(0xFFF5F5F5);
   static const Color surfaceColor = Colors.white;
   static const Color errorColor = Color(0xFFD32F2F);
+  
+  // URLs de imágenes remotas (fallback)
+  static const String backgroundImageUrl = 'https://mrrichar.netlify.app/fondo-default.png';
+  static const String logoImageUrl = 'https://mrrichar.netlify.app/logo.png';
 
   static ThemeData lightTheme = ThemeData(
-    primarySwatch: Colors.green,
+    primarySwatch: Colors.blue,
     primaryColor: primaryColor,
     colorScheme: const ColorScheme.light(
       primary: primaryColor,
       secondary: secondaryColor,
       surface: surfaceColor,
       error: errorColor,
-      onPrimary: Colors.white,
-      onSecondary: Colors.white,
+      onPrimary: Colors.white, // Letras blancas en primario
+      onSecondary: Colors.white, // Letras blancas en secundario
       onSurface: Colors.black87,
       onError: Colors.white,
     ),
     appBarTheme: const AppBarTheme(
       backgroundColor: primaryColor,
-      foregroundColor: Colors.white,
+      foregroundColor: Colors.white, // Letras blancas en AppBar
       centerTitle: true,
       elevation: 2,
       titleTextStyle: TextStyle(
@@ -31,6 +36,7 @@ class AppTheme {
         fontSize: 20,
         fontWeight: FontWeight.bold,
       ),
+      iconTheme: IconThemeData(color: Colors.white), // Íconos blancos
     ),
     cardTheme: CardThemeData(
       elevation: 4,
@@ -42,17 +48,18 @@ class AppTheme {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: Colors.white, // Letras blancas en botones
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        elevation: 3,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: primaryColor,
-        side: const BorderSide(color: primaryColor),
+        side: const BorderSide(color: primaryColor, width: 2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -60,8 +67,8 @@ class AppTheme {
       ),
     ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: accentColor,
-      foregroundColor: Colors.black,
+      backgroundColor: primaryColor, // Botón flotante con color primario
+      foregroundColor: Colors.white, // Íconos blancos en botón flotante
     ),
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(
@@ -93,14 +100,94 @@ class AppTheme {
   static const Color warningColor = Color(0xFFFF9800);
   static const Color infoColor = Color(0xFF2196F3);
 
-  // Position colors for players
+  // Position colors for players - Actualizados para el tema azul
   static const Map<String, Color> positionColors = {
-    'GK': Color(0xFFFFEB3B), // Amarillo para porteros
-    'DEF': Color(0xFF2196F3), // Azul para defensas
-    'MID': Color(0xFF4CAF50), // Verde para mediocampistas
-    'FW': Color(0xFFE91E63), // Rojo/Rosa para delanteros
-    'ATT': Color(0xFFE91E63), // Rojo/Rosa para atacantes
+    'GK': Color(0xFFFFB300), // Naranja/amarillo para porteros
+    'DEF': Color(0xFF1976D2), // Azul primario para defensas
+    'MID': Color(0xFF388E3C), // Verde para mediocampistas
+    'FW': Color(0xFFD32F2F), // Rojo para delanteros
+    'ATT': Color(0xFFD32F2F), // Rojo para atacantes
   };
+
+  // Función para crear fondo con imagen (usa cache local si está disponible)
+  static BoxDecoration get backgroundDecoration {
+    return const BoxDecoration(
+      image: DecorationImage(
+        image: NetworkImage(backgroundImageUrl),
+        fit: BoxFit.cover,
+        opacity: 0.1,
+      ),
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFFF5F5F5),
+          Color(0xFFE3F2FD),
+        ],
+      ),
+    );
+  }
+
+  // Función para crear fondo con imagen más prominente
+  static BoxDecoration get prominentBackgroundDecoration {
+    return const BoxDecoration(
+      image: DecorationImage(
+        image: NetworkImage(backgroundImageUrl),
+        fit: BoxFit.cover,
+        opacity: 0.3,
+      ),
+    );
+  }
+
+  // Widget para mostrar el logo de la app
+  static Widget buildAppLogo({
+    double? width,
+    double? height,
+    BoxFit fit = BoxFit.contain,
+  }) {
+    return Image.network(
+      logoImageUrl,
+      width: width,
+      height: height,
+      fit: fit,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return SizedBox(
+          width: width,
+          height: height,
+          child: Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+              strokeWidth: 2,
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return _buildFallbackLogo(width, height);
+      },
+    );
+  }
+
+  // Logo de respaldo cuando no se puede cargar la imagen
+  static Widget _buildFallbackLogo(double? width, double? height) {
+    return Container(
+      width: width ?? 48,
+      height: height ?? 48,
+      decoration: BoxDecoration(
+        color: primaryColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Icon(
+        Icons.sports_soccer,
+        color: Colors.white,
+        size: 32,
+      ),
+    );
+  }
 
   // Text styles
   static const TextStyle headlineStyle = TextStyle(

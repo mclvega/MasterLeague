@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 enum CompetitionType { league, cup, tournament }
 
 enum CompetitionStatus { upcoming, ongoing, completed }
@@ -61,6 +63,15 @@ class Competition {
       'description': description,
       'rules': rules,
     };
+  }
+
+  // Métodos JSON para base de datos
+  String toJson() {
+    return json.encode(toMap());
+  }
+
+  factory Competition.fromJson(String jsonString) {
+    return Competition.fromMap(json.decode(jsonString));
   }
 
   Competition copyWith({

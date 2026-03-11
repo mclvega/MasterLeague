@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/competition_provider.dart';
 import '../../models/competition.dart';
+import '../../utils/number_format_utils.dart';
 import '../../utils/theme.dart';
 import 'package:intl/intl.dart';
 
@@ -156,7 +157,7 @@ class CompetitionCard extends StatelessWidget {
                   _buildStatusChip(),
                   const Spacer(),
                   Text(
-                    '\$${_formatPrize(competition.prizePool)}',
+                    '\$${NumberFormatUtils.money(competition.prizePool)}',
                     style: AppTheme.titleStyle.copyWith(
                       color: AppTheme.accentColor,
                       fontWeight: FontWeight.bold,
@@ -289,16 +290,6 @@ class CompetitionCard extends StatelessWidget {
     );
   }
 
-  String _formatPrize(double prize) {
-    if (prize >= 1000000) {
-      return '${(prize / 1000000).toStringAsFixed(1)}M';
-    } else if (prize >= 1000) {
-      return '${(prize / 1000).toStringAsFixed(0)}K';
-    } else {
-      return prize.toStringAsFixed(0);
-    }
-  }
-
   void _showCompetitionDetails(BuildContext context) {
     showDialog(
       context: context,
@@ -361,7 +352,7 @@ class CompetitionDetailsDialog extends StatelessWidget {
             _buildDetailRow('Fecha de inicio', DateFormat('dd/MM/yyyy').format(competition.startDate)),
             if (competition.endDate != null)
               _buildDetailRow('Fecha de fin', DateFormat('dd/MM/yyyy').format(competition.endDate!)),
-            _buildDetailRow('Premio', '\$${_formatPrize(competition.prizePool)}'),
+            _buildDetailRow('Premio', '\$${NumberFormatUtils.money(competition.prizePool)}'),
             _buildDetailRow('Participantes', '${competition.participantCount} equipos'),
             if (competition.rules != null) ...[
               const SizedBox(height: 16),
@@ -426,13 +417,4 @@ class CompetitionDetailsDialog extends StatelessWidget {
     }
   }
 
-  String _formatPrize(double prize) {
-    if (prize >= 1000000) {
-      return '${(prize / 1000000).toStringAsFixed(1)}M';
-    } else if (prize >= 1000) {
-      return '${(prize / 1000).toStringAsFixed(0)}K';
-    } else {
-      return prize.toStringAsFixed(0);
-    }
-  }
 }

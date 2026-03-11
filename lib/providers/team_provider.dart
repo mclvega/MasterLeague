@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/team.dart';
 import '../services/file_import_service_simple.dart';
+import '../services/database_service.dart';
 
 class TeamProvider with ChangeNotifier {
   final List<Team> _teams = [];
@@ -108,8 +109,8 @@ class TeamProvider with ChangeNotifier {
   }
 
   Future<void> loadDataFromJsonUrl() async {
-    // Google Drive direct download URL
-    const String jsonUrl = 'https://drive.google.com/uc?export=download&id=1nsXpZs6FYQ0FfbGwA6CuJCSFWQkgl4AN';
+    // Google Sheets URL (se exporta automaticamente a Excel)
+    const String excelUrl = 'https://docs.google.com/spreadsheets/d/1aLosZuNxbrDmMC0Jialz0ahInZDZsmlZ/edit?usp=drive_link&rtpof=true&sd=true';
     
     try {
       setLoading(true);
@@ -122,11 +123,14 @@ class TeamProvider with ChangeNotifier {
       print('🏟️ Cargando equipos...');
       
       try {
-        Map<String, dynamic> data = await FileImportService.downloadAndLoadJsonData(jsonUrl);
+        Map<String, dynamic> data = await FileImportService.downloadAndLoadExcelData(excelUrl);
         
         // Load teams
         List<Team> importedTeams = data['teams'] ?? [];
         _teams.addAll(importedTeams);
+        
+        // Guardar en cache local
+        await saveTeamsToCache(_teams);
         
         print('✅ Equipos cargados: ${importedTeams.length}');
         
@@ -134,8 +138,18 @@ class TeamProvider with ChangeNotifier {
           setError('No se encontraron equipos en los datos');
         }
       } catch (downloadError) {
-        print('❌ Error cargando equipos: $downloadError');
-        setError('Error cargando equipos: $downloadError');
+        print('❌ Error cargando equipos desde Excel: $downloadError');
+        
+        // Intentar cargar desde cache local como respaldo
+        print('🔄 Intentando cargar desde cache local...');
+        await loadTeamsFromCache();
+        
+        if (_teams.isEmpty) {
+          setError('Error cargando equipos y no hay datos en cache: $downloadError');
+        } else {
+          setError('Cargado desde cache local (sin conexión)');
+          print('✅ Equipos cargados desde cache: ${_teams.length}');
+        }
       }
       
     } catch (e) {
@@ -144,6 +158,68 @@ class TeamProvider with ChangeNotifier {
     } finally {
       setLoading(false);
       notifyListeners();
+    }
+  }
+
+  /// Carga equipos desde el cache local
+  Future<void> loadTeamsFromCache() async {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      final cachedTeams = await _db.getCachedTeams();
+      _teams = cachedTeams;
+      
+      print('💾 Equipos cargados desde cache: ${_teams.length}');
+      
+      if (_teams.isEmpty) {
+        setError('No hay equipos en el cache local');
+      }
+    } catch (e) {
+      setError('Error cargando cache: $e');
+      print('❌ Error cargando cache: $e');
+    } finally {
+      setLoading(false);
+      notifyListeners();
+    }
+  }
+
+  /// Guarda equipos en el cache local
+  Future<void> saveTeamsToCache(List<Team> teams) async {
+    try {
+      await _db.cacheTeams(teams);
+      print('💾 ${teams.length} equipos guardados en cache');
+    } catch (e) {
+      print('❌ Error guardando equipos en cache: $e');
+    }
+  }
+
+  /// Verifica si hay datos en cache
+  Future<bool> hasCachedData() async {
+    try {
+      final cachedTeams = await _db.getCachedTeams();
+      return cachedTeams.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Obtiene la fecha de la última actualización del cache
+  Future<DateTime?> getLastCacheUpdate() async {
+    try {
+      return await _db.getLastCacheUpdate();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Limpia el cache local
+  Future<void> clearCache() async {
+    try {
+      await _db.clearAllCache();
+      print('🗑️ Cache de equipos limpiado');
+    } catch (e) {
+      print('❌ Error limpiando cache: $e');
     }
   }
 }
