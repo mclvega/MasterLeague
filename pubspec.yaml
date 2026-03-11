@@ -1,0 +1,51 @@
+name: master_league
+description: A Flutter application for organizing football master leagues
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # File Reading
+  excel: ^4.0.0
+  file_picker: ^8.1.2  # Using a stable recent version
+  
+  # HTTP requests for URLs
+  http: ^1.1.0
+  dio: ^5.3.2
+  
+  # Data persistence
+  sqflite: ^2.3.0
+  shared_preferences: ^2.2.2
+  
+  # File system paths
+  path_provider: ^2.1.1
+  
+  # UI Components
+  cupertino_icons: ^1.0.2
+  
+  # Date/Time utilities
+  intl: ^0.18.1
+  
+  # Loading indicators
+  flutter_spinkit: ^5.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/
+    - assets/images/
