@@ -141,8 +141,8 @@ class CompetitionProvider with ChangeNotifier {
   }
 
   Future<void> loadDataFromJsonUrl() async {
-    // Google Drive direct download URL
-    const String jsonUrl = 'https://drive.google.com/uc?export=download&id=1nsXpZs6FYQ0FfbGwA6CuJCSFWQkgl4AN';
+    // Google Sheets URL (se exporta automaticamente a Excel)
+    const String excelUrl = 'https://docs.google.com/spreadsheets/d/1aLosZuNxbrDmMC0Jialz0ahInZDZsmlZ/edit?usp=drive_link&rtpof=true&sd=true';
 
     try {
       setLoading(true);
@@ -151,7 +151,7 @@ class CompetitionProvider with ChangeNotifier {
       _competitions.clear();
       notifyListeners();
 
-      final Map<String, dynamic> data = await FileImportService.downloadAndLoadJsonData(jsonUrl);
+      final Map<String, dynamic> data = await FileImportService.downloadAndLoadExcelData(excelUrl);
 
       final List<Competition> importedCompetitions = data['competitions'] ?? [];
       _competitions.addAll(importedCompetitions);

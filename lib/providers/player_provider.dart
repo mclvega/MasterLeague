@@ -120,8 +120,8 @@ class PlayerProvider with ChangeNotifier {
   }
 
   Future<void> loadDataFromJsonUrl() async {
-    // Google Drive direct download URL
-    const String jsonUrl = 'https://drive.google.com/uc?export=download&id=1nsXpZs6FYQ0FfbGwA6CuJCSFWQkgl4AN';
+    // Google Sheets URL (se exporta automaticamente a Excel)
+    const String excelUrl = 'https://docs.google.com/spreadsheets/d/1aLosZuNxbrDmMC0Jialz0ahInZDZsmlZ/edit?usp=drive_link&rtpof=true&sd=true';
     
     try {
       setLoading(true);
@@ -135,7 +135,7 @@ class PlayerProvider with ChangeNotifier {
       print('Iniciando carga de datos...');
       
       try {
-        Map<String, dynamic> data = await FileImportService.downloadAndLoadJsonData(jsonUrl);
+        Map<String, dynamic> data = await FileImportService.downloadAndLoadExcelData(excelUrl);
         
         // Load players
         List<Player> importedPlayers = data['players'] ?? [];

@@ -3,11 +3,13 @@ import 'package:provider/provider.dart';
 import '../providers/player_provider.dart';
 import '../providers/team_provider.dart';
 import '../providers/competition_provider.dart';
+import '../providers/settings_provider.dart';
 import '../utils/theme.dart';
 import 'players/players_screen.dart';
 import 'teams/teams_screen.dart';
 import 'competitions/competitions_screen.dart';
 import 'free_agents/free_agents_screen.dart';
+import 'settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,11 +32,24 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent, // Fondo transparente para mostrar la imagen
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
-        title: const Text('Master League Football'),
+        title: Row(
+          children: [
+            // Logo de la app
+            AppTheme.buildAppLogo(width: 32, height: 32),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('Liga Master MRRICHAR'),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () {
               context.read<PlayerProvider>().loadDataFromJsonUrl();
               context.read<TeamProvider>().loadDataFromJsonUrl();
@@ -42,19 +57,38 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             tooltip: 'Recargar Datos',
           ),
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
+            },
+            tooltip: 'Configuraciones',
+          ),
         ],
       ),
-      body: _screens[_selectedIndex],
+      body: Container(
+        decoration: AppTheme.backgroundDecoration, // Aplicar fondo con imagen
+        child: _screens[_selectedIndex],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
-        selectedItemColor: AppTheme.primaryColor,
+        selectedItemColor: AppTheme.primaryColor, // Color azul para seleccionado
         unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.white,
+        elevation: 8,
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+        ),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            label: 'Inicio',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.people),
@@ -98,7 +132,7 @@ class _DashboardTabState extends State<DashboardTab>
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
-    )..repeat(); // Make the animation repeat continuously
+    );
     
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
@@ -108,10 +142,60 @@ class _DashboardTabState extends State<DashboardTab>
       CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
     );
 
-    // Load data automatically when the dashboard initializes
+    // Cargar configuración y datos automáticamente al iniciar
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadData();
+      _initializeApp();
+      _animationController.forward(); // Iniciar animación una sola vez
     });
+  }
+
+  Future<void> _initializeApp() async {
+    // Primero, cargar configuración
+    final settingsProvider = context.read<SettingsProvider>();
+    await settingsProvider.loadSettings();
+    
+    // Luego cargar datos según la configuración
+    if (settingsProvider.autoLoadData || 
+        (!settingsProvider.offlineMode && _shouldLoadData())) {
+      await _loadData();
+    } else if (settingsProvider.offlineMode) {
+      await _loadDataFromCache();
+    }
+  }
+
+  bool _shouldLoadData() {
+    final playerProvider = context.read<PlayerProvider>();
+    final teamProvider = context.read<TeamProvider>();
+    final competitionProvider = context.read<CompetitionProvider>();
+    
+    return playerProvider.players.isEmpty || 
+           teamProvider.teams.isEmpty || 
+           competitionProvider.competitions.isEmpty;
+  }
+
+  Future<void> _loadDataFromCache() async {
+    final teamProvider = context.read<TeamProvider>();
+    
+    try {
+      await teamProvider.loadTeamsFromCache();
+    } catch (e) {
+      print('Error al cargar desde caché: $e');
+    }
+  }
+
+  Future<void> _loadData() async {
+    final playerProvider = context.read<PlayerProvider>();
+    final teamProvider = context.read<TeamProvider>();
+    final competitionProvider = context.read<CompetitionProvider>();
+    
+    // Solo cargar si no hay datos o si se fuerza actualización
+    if (_shouldLoadData()) {
+      await Future.wait([
+        playerProvider.loadDataFromJsonUrl(),
+        teamProvider.loadDataFromJsonUrl(),
+        competitionProvider.loadDataFromJsonUrl(),
+      ]);
+    }
   }
 
   @override
@@ -120,52 +204,22 @@ class _DashboardTabState extends State<DashboardTab>
     super.dispose();
   }
 
-  Future<void> _loadData() async {
-    final playerProvider = context.read<PlayerProvider>();
-    final teamProvider = context.read<TeamProvider>();
-    final competitionProvider = context.read<CompetitionProvider>();
-    
-    // Only load if no data exists yet
-    if (playerProvider.players.isEmpty || teamProvider.teams.isEmpty || competitionProvider.competitions.isEmpty) {
-      await Future.wait([
-        playerProvider.loadDataFromJsonUrl(),
-        teamProvider.loadDataFromJsonUrl(),
-        competitionProvider.loadDataFromJsonUrl(),
-      ]);
-      
-      if (mounted && playerProvider.error == null) {
-        // Stop the repeating animation and play the entrance animation
-        _animationController.stop();
-        _animationController.reset();
-        _animationController.forward();
-      } else {
-        // Keep the loading animation if there's an error
-        _animationController.repeat();
-      }
-    } else {
-      // Data already loaded, just play the entrance animation
-      _animationController.stop();
-      _animationController.reset();
-      _animationController.forward();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Consumer3<PlayerProvider, TeamProvider, CompetitionProvider>(
-      builder: (context, playerProvider, teamProvider, competitionProvider, child) {
+    return Consumer4<PlayerProvider, TeamProvider, CompetitionProvider, SettingsProvider>(
+      builder: (context, playerProvider, teamProvider, competitionProvider, settingsProvider, child) {
         
-        // Show loading screen while importing data
+        // Mostrar pantalla de carga mientras se importan datos
         if (playerProvider.isLoading && playerProvider.players.isEmpty) {
           return _buildLoadingScreen();
         }
         
-        // Show error screen if there's an error
+        // Mostrar pantalla de error si ocurre un problema
         if (playerProvider.error != null && playerProvider.players.isEmpty) {
           return _buildErrorScreen(playerProvider.error!, () => _loadData());
         }
         
-        // Show main dashboard with animations
+        // Mostrar tablero principal con animaciones
         return AnimatedBuilder(
           animation: _animationController,
           builder: (context, child) {
@@ -173,7 +227,7 @@ class _DashboardTabState extends State<DashboardTab>
               opacity: _fadeAnimation,
               child: ScaleTransition(
                 scale: _scaleAnimation,
-                child: _buildMainDashboard(context, playerProvider, teamProvider, competitionProvider),
+                child: _buildMainDashboard(context, playerProvider, teamProvider, competitionProvider, settingsProvider),
               ),
             );
           },
@@ -187,7 +241,7 @@ class _DashboardTabState extends State<DashboardTab>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Animated loading indicator
+          // Indicador animado de carga
           SizedBox(
             width: 80,
             height: 80,
@@ -213,7 +267,7 @@ class _DashboardTabState extends State<DashboardTab>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          // Animated dots
+          // Puntos animados
           _buildAnimatedDots(),
         ],
       ),
@@ -292,6 +346,7 @@ class _DashboardTabState extends State<DashboardTab>
     PlayerProvider playerProvider,
     TeamProvider teamProvider,
     CompetitionProvider competitionProvider,
+    SettingsProvider settingsProvider,
   ) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -304,71 +359,187 @@ class _DashboardTabState extends State<DashboardTab>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              children: [
-                _buildStatsCard(
-                  'Total Jugadores',
-                  playerProvider.players.length.toString(),
-                  Icons.people,
-                  AppTheme.primaryColor,
+
+          // Tarjeta del equipo por defecto o mensaje de guía
+          if (settingsProvider.hasDefaultTeam) ...[
+            _buildDefaultTeamDetails(settingsProvider, teamProvider, playerProvider),
+            const SizedBox(height: 20),
+          ] else ...[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    const Icon(Icons.info_outline, color: AppTheme.primaryColor, size: 32),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Selecciona tu equipo en configuración para mostrar estadísticas personalizadas.',
+                      textAlign: TextAlign.center,
+                      style: AppTheme.bodyStyle,
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.settings),
+                      label: const Text('Ir a configuración'),
+                    ),
+                  ],
                 ),
-                _buildStatsCard(
-                  'Jugadores Libres',
-                  playerProvider.freeAgents.length.toString(),
-                  Icons.person_add_disabled,
-                  AppTheme.warningColor,
-                ),
-                _buildStatsCard(
-                  'Equipos',
-                  teamProvider.teams.length.toString(),
-                  Icons.group,
-                  AppTheme.secondaryColor,
-                ),
-                _buildStatsCard(
-                  'Competiciones',
-                  competitionProvider.competitions.length.toString(),
-                  Icons.emoji_events,
-                  AppTheme.accentColor,
-                ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          _buildRecentActivity(context, playerProvider, teamProvider, competitionProvider),
+            const SizedBox(height: 20),
+          ], 
         ],
       ),
     );
   }
 
-  Widget _buildStatsCard(String title, String value, IconData icon, Color color) {
+  Widget _buildDefaultTeamDetails(
+    SettingsProvider settingsProvider,
+    TeamProvider teamProvider,
+    PlayerProvider playerProvider,
+  ) {
+    final defaultTeam = teamProvider.getTeamById(settingsProvider.defaultTeamId!);
+
+    if (defaultTeam == null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'No se encontró el equipo por defecto en la lista actual.',
+            style: AppTheme.bodyStyle.copyWith(color: Colors.grey[700]),
+          ),
+        ),
+      );
+    }
+
+    final teamPlayers = playerProvider.players.where((player) {
+      final isByTeamId = player.teamId != null && player.teamId == defaultTeam.id;
+      final isByPlayerList = defaultTeam.playerIds.contains(player.id);
+      return isByTeamId || isByPlayerList;
+    }).toList();
+
+    final avgOverall = teamPlayers.isEmpty
+        ? 0.0
+        : teamPlayers.map((p) => p.overall).reduce((a, b) => a + b) / teamPlayers.length;
+
+    final totalValue = teamPlayers.fold<double>(0.0, (sum, p) => sum + p.price);
+
     return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 40, color: color),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: AppTheme.headlineStyle.copyWith(color: color),
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: SizedBox(
+                    width: 56,
+                    height: 56,
+                    child: (defaultTeam.logoUrl != null && defaultTeam.logoUrl!.isNotEmpty)
+                        ? Image.network(
+                            defaultTeam.logoUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => AppTheme.buildAppLogo(width: 56, height: 56),
+                          )
+                        : AppTheme.buildAppLogo(width: 56, height: 56),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        defaultTeam.name,
+                        style: AppTheme.titleStyle.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'DT: ${defaultTeam.ownerName}',
+                        style: AppTheme.bodyStyle.copyWith(color: Colors.grey[700]),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.star, color: Colors.amber),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: AppTheme.subtitleStyle,
-              textAlign: TextAlign.center,
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildMiniStat('Jugadores', teamPlayers.length.toString(), Icons.people),
+                _buildMiniStat('Media', avgOverall.toStringAsFixed(1), Icons.trending_up),
+                _buildMiniStat('Valor', '\$${totalValue.toStringAsFixed(0)}M', Icons.attach_money),
+                _buildMiniStat('Presupuesto', '\$${defaultTeam.budget.toStringAsFixed(0)}M', Icons.account_balance_wallet),
+              ],
             ),
+            if (defaultTeam.stats != null) ...[
+              const SizedBox(height: 14),
+              Text('Estadísticas competitivas', style: AppTheme.subtitleStyle),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildSmallMetric('PTS', defaultTeam.stats!.points.toString()),
+                  _buildSmallMetric('PJ', defaultTeam.stats!.matchesPlayed.toString()),
+                  _buildSmallMetric('G', defaultTeam.stats!.wins.toString()),
+                  _buildSmallMetric('E', defaultTeam.stats!.draws.toString()),
+                  _buildSmallMetric('P', defaultTeam.stats!.losses.toString()),
+                ],
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
+ 
+  Widget _buildMiniStat(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppTheme.primaryColor),
+          const SizedBox(width: 6),
+          Text(
+            '$label: $value',
+            style: AppTheme.bodyStyle.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSmallMetric(String label, String value) {
+    return Column(
+      children: [
+        Text(label, style: AppTheme.bodyStyle.copyWith(color: Colors.grey[600], fontSize: 12)),
+        const SizedBox(height: 2),
+        Text(value, style: AppTheme.titleStyle.copyWith(color: AppTheme.primaryColor)),
+      ],
+    );
+  }
+
+  
   Widget _buildRecentActivity(
     BuildContext context,
     PlayerProvider playerProvider,
@@ -417,7 +588,7 @@ class _DashboardTabState extends State<DashboardTab>
   }
 
   void _navigateToTab(BuildContext context, int tabIndex) {
-    // Find the ancestor state using the context
+    // Buscar el estado padre usando el contexto
     final homeState = context.findAncestorStateOfType<_HomeScreenState>();
     if (homeState != null) {
       homeState.setState(() {

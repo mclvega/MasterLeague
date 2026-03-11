@@ -272,16 +272,4 @@ class _PlayersScreenState extends State<PlayersScreen> {
       },
     );
   }
-
-  void _clearFilters(PlayerProvider playerProvider) {
-    setState(() {
-      _selectedPosition = null;
-      _sortBy = 'name';
-      _sortAscending = true;
-    });
-    _searchController.clear();
-    playerProvider.searchPlayers('');
-    playerProvider.filterByPosition(null);
-    playerProvider.sortPlayers('name', ascending: true);
-  }
 }
