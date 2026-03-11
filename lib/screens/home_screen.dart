@@ -354,7 +354,7 @@ class _DashboardTabState extends State<DashboardTab>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Resumen de la Liga',
+            'Dashboard',
             style: AppTheme.headlineStyle,
             textAlign: TextAlign.center,
           ),
