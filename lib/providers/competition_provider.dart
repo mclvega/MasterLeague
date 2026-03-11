@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/competition.dart';
+import '../services/file_import_service_simple.dart';
 
 class CompetitionProvider with ChangeNotifier {
   List<Competition> _competitions = [];
@@ -137,5 +138,32 @@ class CompetitionProvider with ChangeNotifier {
   void clearCompetitions() {
     _competitions.clear();
     notifyListeners();
+  }
+
+  Future<void> loadDataFromJsonUrl() async {
+    // Google Drive direct download URL
+    const String jsonUrl = 'https://drive.google.com/uc?export=download&id=1nsXpZs6FYQ0FfbGwA6CuJCSFWQkgl4AN';
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      _competitions.clear();
+      notifyListeners();
+
+      final Map<String, dynamic> data = await FileImportService.downloadAndLoadJsonData(jsonUrl);
+
+      final List<Competition> importedCompetitions = data['competitions'] ?? [];
+      _competitions.addAll(importedCompetitions);
+
+      if (_competitions.isEmpty) {
+        setError('No se encontraron competiciones en los datos');
+      }
+    } catch (e) {
+      setError('Error cargando competiciones: $e');
+    } finally {
+      setLoading(false);
+      notifyListeners();
+    }
   }
 }

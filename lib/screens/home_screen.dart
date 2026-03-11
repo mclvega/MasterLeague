@@ -37,6 +37,8 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.refresh),
             onPressed: () {
               context.read<PlayerProvider>().loadDataFromJsonUrl();
+              context.read<TeamProvider>().loadDataFromJsonUrl();
+              context.read<CompetitionProvider>().loadDataFromJsonUrl();
             },
             tooltip: 'Recargar Datos',
           ),
@@ -120,10 +122,16 @@ class _DashboardTabState extends State<DashboardTab>
 
   Future<void> _loadData() async {
     final playerProvider = context.read<PlayerProvider>();
+    final teamProvider = context.read<TeamProvider>();
+    final competitionProvider = context.read<CompetitionProvider>();
     
     // Only load if no data exists yet
-    if (playerProvider.players.isEmpty) {
-      await playerProvider.loadDataFromJsonUrl();
+    if (playerProvider.players.isEmpty || teamProvider.teams.isEmpty || competitionProvider.competitions.isEmpty) {
+      await Future.wait([
+        playerProvider.loadDataFromJsonUrl(),
+        teamProvider.loadDataFromJsonUrl(),
+        competitionProvider.loadDataFromJsonUrl(),
+      ]);
       
       if (mounted && playerProvider.error == null) {
         // Stop the repeating animation and play the entrance animation
