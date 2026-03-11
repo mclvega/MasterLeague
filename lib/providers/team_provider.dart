@@ -4,9 +4,7 @@ import '../services/file_import_service_simple.dart';
 import '../services/database_service.dart';
 
 class TeamProvider with ChangeNotifier {
-  final DatabaseService _db = DatabaseService();
-  
-  List<Team> _teams = [];
+  final List<Team> _teams = [];
   bool _isLoading = false;
   String? _error;
 

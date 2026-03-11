@@ -19,13 +19,13 @@ class CompetitionsScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.emoji_events,
                     color: AppTheme.accentColor,
                     size: 28,
                   ),
                   const SizedBox(width: 12),
-                  Text(
+                  const Text(
                     'Competiciones',
                     style: AppTheme.headlineStyle,
                   ),
@@ -321,7 +321,7 @@ class CompetitionDetailsDialog extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.emoji_events,
                   color: AppTheme.accentColor,
                   size: 32,
@@ -356,7 +356,7 @@ class CompetitionDetailsDialog extends StatelessWidget {
             _buildDetailRow('Participantes', '${competition.participantCount} equipos'),
             if (competition.rules != null) ...[
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Reglas',
                 style: AppTheme.titleStyle,
               ),

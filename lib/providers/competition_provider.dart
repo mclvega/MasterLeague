@@ -3,7 +3,7 @@ import '../models/competition.dart';
 import '../services/file_import_service_simple.dart';
 
 class CompetitionProvider with ChangeNotifier {
-  List<Competition> _competitions = [];
+  final List<Competition> _competitions = [];
   bool _isLoading = false;
   String? _error;
 

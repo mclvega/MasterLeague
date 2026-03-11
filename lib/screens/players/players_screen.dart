@@ -100,41 +100,36 @@ class _PlayersScreenState extends State<PlayersScreen> {
             },
           ),
           const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isCompact = constraints.maxWidth < 900;
-
-              final positionFilter = DropdownButtonFormField<String>(
-                value: _selectedPosition ?? 'Todas',
-                decoration: const InputDecoration(
-                  labelText: 'Posición',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: _selectedPosition ?? 'Todas',
+                  decoration: const InputDecoration(
+                    labelText: 'Posición',
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  items: _positions.map((position) {
+                    return DropdownMenuItem<String>(
+                      value: position,
+                      child: Text(position),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedPosition = value == 'Todas' ? null : value;
+                    });
+                    playerProvider.filterByPosition(_selectedPosition);
+                  },
                 ),
-                items: _positions.map((position) {
-                  return DropdownMenuItem<String>(
-                    value: position,
-                    child: Text(position),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedPosition = value == 'Todas' ? null : value;
-                  });
-                  playerProvider.filterByPosition(_selectedPosition);
-                  playerProvider.sortPlayers(_sortBy, ascending: _sortAscending);
-                },
-              );
-
-              final teamFilter = DropdownButtonFormField<String>(
-                value: _selectedTeamId ?? 'Todos',
-                decoration: const InputDecoration(
-                  labelText: 'Equipo',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                items: [
-                  const DropdownMenuItem<String>(
-                    value: 'Todos',
-                    child: Text('Todos'),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: _sortBy,
+                  decoration: const InputDecoration(
+                    labelText: 'Ordenar por',
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   ...teamProvider.teams.map((team) {
                     return DropdownMenuItem<String>(
@@ -236,7 +231,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.error,
               size: 64,
               color: AppTheme.errorColor,
