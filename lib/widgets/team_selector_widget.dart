@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/team.dart';
 import '../providers/team_provider.dart';
 import '../providers/settings_provider.dart';
+import '../utils/number_format_utils.dart';
 
 class TeamSelectorWidget extends StatefulWidget {
   final String? title;
@@ -125,7 +126,7 @@ class _TeamSelectorWidgetState extends State<TeamSelectorWidget> {
           children: [
             Text('Manager: ${team.ownerName}'),
             Text(
-              'Presupuesto: \$${team.budget.toStringAsFixed(0)}M',
+              'Presupuesto: \$${NumberFormatUtils.money(team.budget)}',
               style: TextStyle(
                 color: team.budget > 50 ? Colors.green : Colors.orange,
                 fontWeight: FontWeight.w500,

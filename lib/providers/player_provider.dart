@@ -7,6 +7,9 @@ class PlayerProvider with ChangeNotifier {
   List<Player> _filteredPlayers = [];
   bool _isLoading = false;
   String? _error;
+  String _searchQuery = '';
+  String? _positionFilter;
+  String? _teamFilter;
 
   List<Player> get players => _players;
   List<Player> get filteredPlayers => _filteredPlayers;
@@ -63,29 +66,39 @@ class PlayerProvider with ChangeNotifier {
   }
 
   void searchPlayers(String query) {
-    if (query.isEmpty) {
-      _filteredPlayers = List.from(_players);
-    } else {
-      _filteredPlayers = _players
-          .where((player) =>
-              player.name.toLowerCase().contains(query.toLowerCase()) ||
-              player.position.toLowerCase().contains(query.toLowerCase()) ||
-              player.club.toLowerCase().contains(query.toLowerCase()) ||
-              player.nationality.toLowerCase().contains(query.toLowerCase()))
-          .toList();
-    }
+    _searchQuery = query.trim().toLowerCase();
+    _applyFilters();
     notifyListeners();
   }
 
   void filterByPosition(String? position) {
-    if (position == null || position.isEmpty) {
-      _filteredPlayers = List.from(_players);
-    } else {
-      _filteredPlayers = _players
-          .where((player) => player.position.toLowerCase() == position.toLowerCase())
-          .toList();
-    }
+    _positionFilter = (position == null || position.isEmpty) ? null : position.toLowerCase();
+    _applyFilters();
     notifyListeners();
+  }
+
+  void filterByTeam(String? teamId) {
+    _teamFilter = (teamId == null || teamId.isEmpty) ? null : teamId;
+    _applyFilters();
+    notifyListeners();
+  }
+
+  void _applyFilters() {
+    _filteredPlayers = _players.where((player) {
+      final matchesSearch = _searchQuery.isEmpty ||
+          player.name.toLowerCase().contains(_searchQuery) ||
+          player.position.toLowerCase().contains(_searchQuery) ||
+          player.club.toLowerCase().contains(_searchQuery) ||
+          player.nationality.toLowerCase().contains(_searchQuery);
+
+      final matchesPosition = _positionFilter == null ||
+          player.position.toLowerCase() == _positionFilter;
+
+      final matchesTeam = _teamFilter == null ||
+          ((player.teamId ?? '') == _teamFilter);
+
+      return matchesSearch && matchesPosition && matchesTeam;
+    }).toList();
   }
 
   void sortPlayers(String sortBy, {bool ascending = true}) {
@@ -140,6 +153,9 @@ class PlayerProvider with ChangeNotifier {
         // Load players
         List<Player> importedPlayers = data['players'] ?? [];
         _players.addAll(importedPlayers);
+        _searchQuery = '';
+        _positionFilter = null;
+        _teamFilter = null;
         _filteredPlayers = List.from(_players);
         
         print('✅ Carga exitosa: ${importedPlayers.length} jugadores');
@@ -206,6 +222,9 @@ class PlayerProvider with ChangeNotifier {
     
     _players.clear();
     _players.addAll(emergencyPlayers);
+    _searchQuery = '';
+    _positionFilter = null;
+    _teamFilter = null;
     _filteredPlayers = List.from(_players);
     
     print('Datos de emergencia cargados: ${_players.length} jugadores');

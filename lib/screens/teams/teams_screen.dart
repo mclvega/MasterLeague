@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/team_provider.dart';
 import '../../providers/player_provider.dart';
 import '../../models/team.dart';
+import '../../utils/number_format_utils.dart';
 import '../../utils/theme.dart';
 
 class TeamsScreen extends StatelessWidget {
@@ -203,7 +204,7 @@ class TeamCard extends StatelessWidget {
                   Expanded(
                     child: _buildFinanceCard(
                       'Presupuesto',
-                      '\$${_formatPrice(team.finances?.budgetRemaining ?? team.budget)}',
+                      '\$${NumberFormatUtils.money(team.finances?.budgetRemaining ?? team.budget)}',
                       Icons.account_balance_wallet,
                       AppTheme.primaryColor,
                     ),
@@ -212,7 +213,7 @@ class TeamCard extends StatelessWidget {
                   Expanded(
                     child: _buildFinanceCard(
                       'Valor Plantilla',
-                      '\$${_formatPrice(totalValue)}',
+                      '\$${NumberFormatUtils.money(totalValue)}',
                       Icons.trending_up,
                       AppTheme.successColor,
                     ),
@@ -350,16 +351,6 @@ class TeamCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _formatPrice(double price) {
-    if (price >= 1000000) {
-      return '${(price / 1000000).toStringAsFixed(1)}M';
-    } else if (price >= 1000) {
-      return '${(price / 1000).toStringAsFixed(0)}K';
-    } else {
-      return price.toStringAsFixed(0);
-    }
   }
 
   void _showTeamDetails(BuildContext context) {
@@ -505,7 +496,7 @@ class TeamCard extends StatelessWidget {
                       title: Text(player.name),
                       subtitle: Text('${player.club} • OVR ${player.overall}'),
                       trailing: Text(
-                        '\$${_formatPrice(player.price)}',
+                        '\$${NumberFormatUtils.money(player.price)}',
                         style: const TextStyle(
                           color: AppTheme.successColor,
                           fontWeight: FontWeight.bold,
@@ -533,35 +524,35 @@ class TeamCard extends StatelessWidget {
           if (team.finances != null) ...[
             _buildFinanceDetailCard(
               'Presupuesto Disponible',
-              '\$${_formatPrice(team.finances!.budgetRemaining)}',
+              '\$${NumberFormatUtils.money(team.finances!.budgetRemaining)}',
               Icons.account_balance_wallet,
               AppTheme.primaryColor,
             ),
             const SizedBox(height: 12),
             _buildFinanceDetailCard(
               'Valor de la Plantilla',
-              '\$${_formatPrice(team.finances!.squadValue)}',
+              '\$${NumberFormatUtils.money(team.finances!.squadValue)}',
               Icons.trending_up,
               AppTheme.successColor,
             ),
             const SizedBox(height: 12),
             _buildFinanceDetailCard(
               'Salarios Totales',
-              '\$${_formatPrice(team.finances!.totalSalaries)}',
+              '\$${NumberFormatUtils.money(team.finances!.totalSalaries)}',
               Icons.payment,
               Colors.orange,
             ),
             const SizedBox(height: 12),
             _buildFinanceDetailCard(
               'Presupuesto de Transfers',
-              '\$${_formatPrice(team.finances!.transferBudget)}',
+              '\$${NumberFormatUtils.money(team.finances!.transferBudget)}',
               Icons.swap_horiz,
               Colors.blue,
             ),
             const SizedBox(height: 12),
             _buildFinanceDetailCard(
               'Ingresos por Patrocinio',
-              '\$${_formatPrice(team.finances!.sponsorshipIncome)}',
+              '\$${NumberFormatUtils.money(team.finances!.sponsorshipIncome)}',
               Icons.business,
               Colors.purple,
             ),

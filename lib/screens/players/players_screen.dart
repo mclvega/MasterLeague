@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/player_provider.dart';
+import '../../providers/team_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../utils/theme.dart';
 import '../../widgets/player_card.dart';
 
@@ -14,16 +16,25 @@ class PlayersScreen extends StatefulWidget {
 class _PlayersScreenState extends State<PlayersScreen> {
   final TextEditingController _searchController = TextEditingController();
   String? _selectedPosition;
+  String? _selectedTeamId;
   String _sortBy = 'name';
   bool _sortAscending = true;
 
   final List<String> _positions = [
     'Todas',
-    'GK',
-    'DEF',
-    'MID',
-    'FW',
-    'ATT',
+    'PT',
+    'CT',
+    'LI',
+    'LD',
+    'MCD',
+    'MC',
+    'II',
+    'ID',
+    'MP',
+    'EI',
+    'ED',
+    'SD',
+    'DC',
   ];
 
   final List<Map<String, dynamic>> _sortOptions = [
@@ -34,6 +45,21 @@ class _PlayersScreenState extends State<PlayersScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final settingsProvider = context.read<SettingsProvider>();
+      if (settingsProvider.defaultTeamId != null && settingsProvider.defaultTeamId!.isNotEmpty) {
+        setState(() {
+          _selectedTeamId = settingsProvider.defaultTeamId;
+        });
+        context.read<PlayerProvider>().filterByTeam(_selectedTeamId);
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -42,12 +68,11 @@ class _PlayersScreenState extends State<PlayersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Consumer<PlayerProvider>(
-        builder: (context, playerProvider, child) {
+      body: Consumer2<PlayerProvider, TeamProvider>(
+        builder: (context, playerProvider, teamProvider, child) {
           return Column(
             children: [
-              _buildSearchAndFilters(playerProvider),
-              _buildPlayerStats(playerProvider),
+              _buildSearchAndFilters(playerProvider, teamProvider),
               Expanded(
                 child: _buildPlayerList(playerProvider),
               ),
@@ -58,7 +83,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
     );
   }
 
-  Widget _buildSearchAndFilters(PlayerProvider playerProvider) {
+  Widget _buildSearchAndFilters(PlayerProvider playerProvider, TeamProvider teamProvider) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -75,54 +100,81 @@ class _PlayersScreenState extends State<PlayersScreen> {
             },
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: _selectedPosition ?? 'Todas',
-                  decoration: const InputDecoration(
-                    labelText: 'Posición',
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 900;
+
+              final positionFilter = DropdownButtonFormField<String>(
+                value: _selectedPosition ?? 'Todas',
+                decoration: const InputDecoration(
+                  labelText: 'Posición',
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                items: _positions.map((position) {
+                  return DropdownMenuItem<String>(
+                    value: position,
+                    child: Text(position),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPosition = value == 'Todas' ? null : value;
+                  });
+                  playerProvider.filterByPosition(_selectedPosition);
+                  playerProvider.sortPlayers(_sortBy, ascending: _sortAscending);
+                },
+              );
+
+              final teamFilter = DropdownButtonFormField<String>(
+                value: _selectedTeamId ?? 'Todos',
+                decoration: const InputDecoration(
+                  labelText: 'Equipo',
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                items: [
+                  const DropdownMenuItem<String>(
+                    value: 'Todos',
+                    child: Text('Todos'),
                   ),
-                  items: _positions.map((position) {
+                  ...teamProvider.teams.map((team) {
                     return DropdownMenuItem<String>(
-                      value: position,
-                      child: Text(position),
+                      value: team.id,
+                      child: Text(team.name, overflow: TextOverflow.ellipsis),
                     );
-                  }).toList(),
-                  onChanged: (value) {
+                  }),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedTeamId = value == 'Todos' ? null : value;
+                  });
+                  playerProvider.filterByTeam(_selectedTeamId);
+                  playerProvider.sortPlayers(_sortBy, ascending: _sortAscending);
+                },
+              );
+
+              final sortFilter = DropdownButtonFormField<String>(
+                value: _sortBy,
+                decoration: const InputDecoration(
+                  labelText: 'Ordenar por',
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                items: _sortOptions.map((option) {
+                  return DropdownMenuItem<String>(
+                    value: option['value'],
+                    child: Text(option['label']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
                     setState(() {
-                      _selectedPosition = value == 'Todas' ? null : value;
+                      _sortBy = value;
                     });
-                    playerProvider.filterByPosition(_selectedPosition);
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: _sortBy,
-                  decoration: const InputDecoration(
-                    labelText: 'Ordenar por',
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                  items: _sortOptions.map((option) {
-                    return DropdownMenuItem<String>(
-                      value: option['value'],
-                      child: Text(option['label']),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _sortBy = value;
-                      });
-                      playerProvider.sortPlayers(value, ascending: _sortAscending);
-                    }
-                  },
-                ),
-              ),
-              IconButton(
+                    playerProvider.sortPlayers(value, ascending: _sortAscending);
+                  }
+                },
+              );
+
+              final sortDirection = IconButton(
                 icon: Icon(
                   _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
                   color: AppTheme.primaryColor,
@@ -133,68 +185,44 @@ class _PlayersScreenState extends State<PlayersScreen> {
                   });
                   playerProvider.sortPlayers(_sortBy, ascending: _sortAscending);
                 },
-              ),
-            ],
+              );
+
+              if (isCompact) {
+                return Column(
+                  children: [
+                    positionFilter,
+                    const SizedBox(height: 10),
+                    teamFilter,
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(child: sortFilter),
+                        const SizedBox(width: 8),
+                        sortDirection,
+                      ],
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: positionFilter),
+                  const SizedBox(width: 12),
+                  Expanded(child: teamFilter),
+                  const SizedBox(width: 12),
+                  Expanded(child: sortFilter),
+                  sortDirection,
+                ],
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPlayerStats(PlayerProvider playerProvider) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatChip(
-            'Total',
-            playerProvider.players.length.toString(),
-            AppTheme.primaryColor,
-          ),
-          _buildStatChip(
-            'Mostrando',
-            playerProvider.filteredPlayers.length.toString(),
-            AppTheme.secondaryColor,
-          ),
-          _buildStatChip(
-            'Libres',
-            playerProvider.freeAgents.length.toString(),
-            AppTheme.warningColor,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatChip(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: TextStyle(color: color, fontSize: 12),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+ 
 
   Widget _buildPlayerList(PlayerProvider playerProvider) {
     if (playerProvider.isLoading) {

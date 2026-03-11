@@ -5,6 +5,7 @@ import '../providers/team_provider.dart';
 import '../providers/competition_provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/theme.dart';
+import '../utils/number_format_utils.dart';
 import 'players/players_screen.dart';
 import 'teams/teams_screen.dart';
 import 'competitions/competitions_screen.dart';
@@ -482,8 +483,8 @@ class _DashboardTabState extends State<DashboardTab>
               children: [
                 _buildMiniStat('Jugadores', teamPlayers.length.toString(), Icons.people),
                 _buildMiniStat('Media', avgOverall.toStringAsFixed(1), Icons.trending_up),
-                _buildMiniStat('Valor', '\$${totalValue.toStringAsFixed(0)}M', Icons.attach_money),
-                _buildMiniStat('Presupuesto', '\$${defaultTeam.budget.toStringAsFixed(0)}M', Icons.account_balance_wallet),
+                _buildMiniStat('Valor', '\$${NumberFormatUtils.money(totalValue)}', Icons.attach_money),
+                _buildMiniStat('Presupuesto', '\$${NumberFormatUtils.money(defaultTeam.budget)}', Icons.account_balance_wallet),
               ],
             ),
             if (defaultTeam.stats != null) ...[
