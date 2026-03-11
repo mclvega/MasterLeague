@@ -3,7 +3,7 @@ import '../models/team.dart';
 import '../services/file_import_service_simple.dart';
 
 class TeamProvider with ChangeNotifier {
-  List<Team> _teams = [];
+  final List<Team> _teams = [];
   bool _isLoading = false;
   String? _error;
 

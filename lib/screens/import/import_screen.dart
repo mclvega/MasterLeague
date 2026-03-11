@@ -98,23 +98,23 @@ class _ImportScreenState extends State<ImportScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Card(
+                const Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Formato de Archivo Esperado',
                           style: AppTheme.titleStyle,
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
+                        SizedBox(height: 8),
+                        Text(
                           'Los archivos deben incluir las siguientes columnas (el orden no importa):',
                           style: AppTheme.bodyStyle,
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
+                        SizedBox(height: 8),
+                        Text(
                           '• Name/Nombre: Nombre del jugador\n'
                           '• Position/Posición: Posición del jugador\n'
                           '• Price/Precio: Precio del jugador\n'
@@ -149,7 +149,7 @@ class _ImportScreenState extends State<ImportScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.error, color: AppTheme.errorColor),
+                        const Icon(Icons.error, color: AppTheme.errorColor),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(

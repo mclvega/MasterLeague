@@ -188,7 +188,7 @@ class _DashboardTabState extends State<DashboardTab>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Animated loading indicator
-          SizedBox(
+          const SizedBox(
             width: 80,
             height: 80,
             child: CircularProgressIndicator(
@@ -252,7 +252,7 @@ class _DashboardTabState extends State<DashboardTab>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.error_outline,
               size: 64,
               color: AppTheme.errorColor,

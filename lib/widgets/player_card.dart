@@ -84,7 +84,7 @@ class PlayerCard extends StatelessWidget {
                       ),
                       const Spacer(),
                       if (team != null) ...[
-                        Icon(
+                        const Icon(
                           Icons.group,
                           size: 16,
                           color: AppTheme.primaryColor,
@@ -265,7 +265,7 @@ class PlayerDetailsDialog extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.person_add_disabled,
                           color: AppTheme.warningColor,
                         ),

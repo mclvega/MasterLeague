@@ -18,13 +18,13 @@ class TeamsScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.group,
                     color: AppTheme.primaryColor,
                     size: 28,
                   ),
                   const SizedBox(width: 12),
-                  Text(
+                  const Text(
                     'Equipos',
                     style: AppTheme.headlineStyle,
                   ),
@@ -38,7 +38,7 @@ class TeamsScreen extends StatelessWidget {
                     ),
                     child: Text(
                       teamProvider.teams.length.toString(),
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppTheme.primaryColor,
                         fontWeight: FontWeight.bold,
                       ),
@@ -524,7 +524,7 @@ class TeamCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Información Financiera',
             style: AppTheme.titleStyle,
           ),
@@ -566,7 +566,7 @@ class TeamCard extends StatelessWidget {
               Colors.purple,
             ),
           ] else ...[
-            Text('No hay información financiera detallada disponible'),
+            const Text('No hay información financiera detallada disponible'),
           ],
 
           const SizedBox(height: 20),
@@ -593,7 +593,7 @@ class TeamCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (team.stats != null) ...[
-            Text(
+            const Text(
               'Estadísticas Generales',
               style: AppTheme.titleStyle,
             ),
@@ -620,7 +620,7 @@ class TeamCard extends StatelessWidget {
           const SizedBox(height: 20),
           
           if (team.competitionStats != null && team.competitionStats!.isNotEmpty) ...[
-            Text(
+            const Text(
               'Estadísticas por Competición',
               style: AppTheme.titleStyle,
             ),
@@ -709,7 +709,7 @@ class TeamCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Forma Reciente',
           style: AppTheme.titleStyle,
         ),

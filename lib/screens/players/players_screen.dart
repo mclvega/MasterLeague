@@ -79,7 +79,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedPosition ?? 'Todas',
+                  initialValue: _selectedPosition ?? 'Todas',
                   decoration: const InputDecoration(
                     labelText: 'Posición',
                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -101,7 +101,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _sortBy,
+                  initialValue: _sortBy,
                   decoration: const InputDecoration(
                     labelText: 'Ordenar por',
                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -208,7 +208,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.error,
               size: 64,
               color: AppTheme.errorColor,

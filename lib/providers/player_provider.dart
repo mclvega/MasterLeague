@@ -3,7 +3,7 @@ import '../models/player.dart';
 import '../services/file_import_service_simple.dart';
 
 class PlayerProvider with ChangeNotifier {
-  List<Player> _players = [];
+  final List<Player> _players = [];
   List<Player> _filteredPlayers = [];
   bool _isLoading = false;
   String? _error;

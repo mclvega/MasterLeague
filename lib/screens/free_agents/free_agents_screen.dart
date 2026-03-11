@@ -19,13 +19,13 @@ class FreeAgentsScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.person_add_disabled,
                     color: AppTheme.warningColor,
                     size: 28,
                   ),
                   const SizedBox(width: 12),
-                  Text(
+                  const Text(
                     'Jugadores Libres',
                     style: AppTheme.headlineStyle,
                   ),
@@ -39,7 +39,7 @@ class FreeAgentsScreen extends StatelessWidget {
                     ),
                     child: Text(
                       freeAgents.length.toString(),
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppTheme.warningColor,
                         fontWeight: FontWeight.bold,
                       ),
