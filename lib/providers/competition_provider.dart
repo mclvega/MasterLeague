@@ -142,7 +142,8 @@ class CompetitionProvider with ChangeNotifier {
 
   Future<void> loadDataFromJsonUrl() async {
     // Google Sheets URL (se exporta automaticamente a Excel)
-    const String excelUrl = 'https://docs.google.com/spreadsheets/d/1aLosZuNxbrDmMC0Jialz0ahInZDZsmlZ/edit?usp=drive_link&rtpof=true&sd=true';
+    const String excelUrl =
+        'https://docs.google.com/spreadsheets/d/1QwBnvXQpDXIb5q4AUd3Sh4PI1zjmTQ03/export?format=xlsx';
 
     try {
       setLoading(true);

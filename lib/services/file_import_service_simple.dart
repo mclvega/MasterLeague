@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:http/http.dart' as http;
@@ -120,6 +121,26 @@ class FileImportService {
       final name = _cell(row, headers, ['name', 'nombre', 'jugador'], fallbackIndex: 1);
       if (name.isEmpty) continue;
 
+      final contractStart = _nullable(_cell(
+        row,
+        headers,
+        ['contractstart', 'inicio', 'inicio_contrato', 'fechainicio'],
+        fallbackIndex: -1,
+      ));
+      final contractEnd = _nullable(_cell(
+        row,
+        headers,
+        ['contractend', 'fin', 'fin_contrato', 'fechafin'],
+        fallbackIndex: -1,
+      ));
+      final contractDurationRaw = _nullable(_cell(
+        row,
+        headers,
+        ['contractduration', 'duracioncontrato', 'duracion_contrato', 'duracion'],
+        fallbackIndex: -1,
+      ));
+      final contractDuration = _computeContractDuration(contractStart, contractEnd) ?? contractDurationRaw;
+
       players.add(
         Player(
           id: _cell(row, headers, ['id', 'playerid', 'player_id'], fallbackIndex: 0).isEmpty
@@ -133,6 +154,9 @@ class FileImportService {
           club: _cell(row, headers, ['club', 'equipo', 'team'], fallbackIndex: 6),
           nationality: _cell(row, headers, ['nationality', 'nacionalidad', 'pais'], fallbackIndex: 7),
           age: _toInt(_cell(row, headers, ['age', 'edad'], fallbackIndex: 8)),
+          contractDuration: contractDuration,
+          contractStart: contractStart,
+          contractEnd: contractEnd,
         ),
       );
     }
@@ -156,6 +180,50 @@ class FileImportService {
           .where((e) => e.isNotEmpty)
           .toList();
 
+      final positionText = _cell(row, headers, ['position', 'posicion', 'puesto', 'ranking'], fallbackIndex: -1);
+      final pointsText = _cell(row, headers, ['points', 'puntos', 'pts'], fallbackIndex: -1);
+      final playedText = _cell(row, headers, ['matchesplayed', 'pj', 'partidosjugados'], fallbackIndex: -1);
+      final winsText = _cell(row, headers, ['wins', 'ganados', 'g'], fallbackIndex: -1);
+      final drawsText = _cell(row, headers, ['draws', 'empatados', 'e'], fallbackIndex: -1);
+      final lossesText = _cell(row, headers, ['losses', 'perdidos', 'p'], fallbackIndex: -1);
+      final goalsForText = _cell(row, headers, ['goalsfor', 'gf', 'golesafavor'], fallbackIndex: -1);
+      final goalsAgainstText = _cell(row, headers, ['goalsagainst', 'gc', 'golesencontra'], fallbackIndex: -1);
+      final goalDiffText = _cell(row, headers, ['goaldifference', 'dg', 'diferenciadegoles'], fallbackIndex: -1);
+
+      final hasAnyStats = [
+        positionText,
+        pointsText,
+        playedText,
+        winsText,
+        drawsText,
+        lossesText,
+        goalsForText,
+        goalsAgainstText,
+        goalDiffText,
+      ].any((v) => v.trim().isNotEmpty);
+
+      final stats = hasAnyStats
+          ? TeamStats(
+              points: _toInt(pointsText),
+              matchesPlayed: _toInt(playedText),
+              wins: _toInt(winsText),
+              draws: _toInt(drawsText),
+              losses: _toInt(lossesText),
+              goalsFor: _toInt(goalsForText),
+              goalsAgainst: _toInt(goalsAgainstText),
+              goalDifference: _toInt(goalDiffText),
+              position: positionText.trim().isEmpty ? null : _toInt(positionText),
+            )
+          : null;
+
+      final competitionStatsRaw = _cell(
+        row,
+        headers,
+        ['competitionstats', 'competition_stats', 'estadisticas_eventos', 'stats_eventos'],
+        fallbackIndex: -1,
+      );
+      final competitionStats = _parseCompetitionStats(competitionStatsRaw);
+
       teams.add(
         Team(
           id: _cell(row, headers, ['id', 'teamid', 'team_id'], fallbackIndex: 0).isEmpty
@@ -169,6 +237,8 @@ class FileImportService {
           formation: _nullable(_cell(row, headers, ['formation', 'formacion'], fallbackIndex: 6)),
           homeStadium: _nullable(_cell(row, headers, ['homestadium', 'estadio'], fallbackIndex: 7)),
           established: _nullable(_cell(row, headers, ['established', 'fundacion', 'fundado'], fallbackIndex: 8)),
+          stats: stats,
+          competitionStats: competitionStats,
         ),
       );
     }
@@ -194,6 +264,17 @@ class FileImportService {
 
       final startDateText = _cell(row, headers, ['startdate', 'inicio', 'fecha_inicio'], fallbackIndex: 5);
       final endDateText = _cell(row, headers, ['enddate', 'fin', 'fecha_fin'], fallbackIndex: 6);
+      final hasStandingsText = _cell(
+        row,
+        headers,
+        ['hasstandings', 'contabla', 'mostrar_tabla', 'tabla_posiciones'],
+        fallbackIndex: -1,
+      );
+      final rulesRaw = _cell(row, headers, ['rules', 'reglas'], fallbackIndex: -1);
+      final rules = _mergeRules(
+        _parseJsonMap(rulesRaw),
+        hasStandingsText.trim().isEmpty ? null : _toBool(hasStandingsText),
+      );
 
       competitions.add(
         Competition(
@@ -208,6 +289,7 @@ class FileImportService {
           endDate: endDateText.isEmpty ? null : _toDate(endDateText),
           prizePool: _toDouble(_cell(row, headers, ['prizepool', 'premio', 'bolsa'], fallbackIndex: 7)),
           description: _nullable(_cell(row, headers, ['description', 'descripcion'], fallbackIndex: 8)),
+          rules: rules,
         ),
       );
     }
@@ -258,6 +340,75 @@ class FileImportService {
   static DateTime _toDate(String input) {
     final parsed = DateTime.tryParse(input);
     return parsed ?? DateTime.now();
+  }
+
+  static String? _computeContractDuration(String? start, String? end) {
+    if (start == null || end == null) return null;
+    final startDate = DateTime.tryParse(start.trim());
+    final endDate = DateTime.tryParse(end.trim());
+    if (startDate == null || endDate == null || endDate.isBefore(startDate)) return null;
+
+    final days = endDate.difference(startDate).inDays + 1;
+    return '$days dias';
+  }
+
+  static Map<String, dynamic>? _parseJsonMap(String raw) {
+    final value = raw.trim();
+    if (value.isEmpty) return null;
+
+    try {
+      final decoded = json.decode(value);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    } catch (_) {
+      // Ignore malformed JSON and continue with import.
+    }
+
+    return null;
+  }
+
+  static Map<String, dynamic>? _mergeRules(
+    Map<String, dynamic>? baseRules,
+    bool? hasStandings,
+  ) {
+    if (baseRules == null && hasStandings == null) return null;
+
+    final merged = <String, dynamic>{
+      ...(baseRules ?? <String, dynamic>{}),
+    };
+
+    if (hasStandings != null) {
+      merged['hasStandings'] = hasStandings;
+    }
+
+    return merged;
+  }
+
+  static bool _toBool(String value) {
+    final normalized = value.trim().toLowerCase();
+    return normalized == '1' ||
+        normalized == 'true' ||
+        normalized == 'si' ||
+        normalized == 'sí' ||
+        normalized == 'yes' ||
+        normalized == 'y';
+  }
+
+  static Map<String, dynamic>? _parseCompetitionStats(String raw) {
+    final value = raw.trim();
+    if (value.isEmpty) return null;
+
+    try {
+      final decoded = json.decode(value);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    } catch (_) {
+      // Silently ignore malformed stats JSON and continue import.
+    }
+
+    return null;
   }
 
   static CompetitionType _parseCompetitionType(String input) {

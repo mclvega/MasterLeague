@@ -65,6 +65,11 @@ Este directorio contiene la documentación para probar la funcionalidad de impor
 
 ### Equipos  
 - **Team Name, Owner, Budget, League, Country, Founded**
+- **Position/Posicion**: posición en tabla (valores posibles: `1` a `20`)
+- **Points/Puntos**, **PJ**, **G**, **E**, **P**, **GF**, **GC**, **DG** (opcionales para tabla de posiciones)
+
+Ejemplo de encabezados para la hoja de Equipos (Excel):
+`id | name | ownerName | budget | playerIds | logoUrl | formation | homeStadium | established | posicion | puntos | pj | g | e | p | gf | gc | dg`
 
 ### Competiciones
 - **Competition, Type, Status, Start Date, End Date, Prize Pool, Participants**

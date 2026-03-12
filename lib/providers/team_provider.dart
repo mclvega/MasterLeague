@@ -4,6 +4,7 @@ import '../services/file_import_service_simple.dart';
 import '../services/database_service.dart';
 
 class TeamProvider with ChangeNotifier {
+  final DatabaseService _db = DatabaseService();
   final List<Team> _teams = [];
   bool _isLoading = false;
   String? _error;
@@ -110,7 +111,8 @@ class TeamProvider with ChangeNotifier {
 
   Future<void> loadDataFromJsonUrl() async {
     // Google Sheets URL (se exporta automaticamente a Excel)
-    const String excelUrl = 'https://docs.google.com/spreadsheets/d/1aLosZuNxbrDmMC0Jialz0ahInZDZsmlZ/edit?usp=drive_link&rtpof=true&sd=true';
+    const String excelUrl =
+        'https://docs.google.com/spreadsheets/d/1QwBnvXQpDXIb5q4AUd3Sh4PI1zjmTQ03/export?format=xlsx';
     
     try {
       setLoading(true);
@@ -168,7 +170,9 @@ class TeamProvider with ChangeNotifier {
       setError(null);
       
       final cachedTeams = await _db.getCachedTeams();
-      _teams = cachedTeams;
+      _teams
+        ..clear()
+        ..addAll(cachedTeams);
       
       print('💾 Equipos cargados desde cache: ${_teams.length}');
       

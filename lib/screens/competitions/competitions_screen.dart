@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/competition_provider.dart';
+import '../../providers/team_provider.dart';
 import '../../models/competition.dart';
+import '../../models/team.dart';
 import '../../utils/number_format_utils.dart';
 import '../../utils/theme.dart';
 import 'package:intl/intl.dart';
@@ -355,29 +357,62 @@ class CompetitionDetailsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
               ],
-              _buildDetailRow('Tipo de evento', _getTypeLabel()),
-              _buildDetailRow('Estado', _getStatusLabel()),
-              _buildDetailRow('Fecha de inicio', DateFormat('dd/MM/yyyy').format(competition.startDate)),
-              if (competition.endDate != null)
-                _buildDetailRow('Fecha de fin', DateFormat('dd/MM/yyyy').format(competition.endDate!)),
-              _buildDetailRow('Premio', '\$${NumberFormatUtils.money(competition.prizePool)}'),
-              _buildDetailRow('Participantes', '${competition.participantCount} equipos'),
-              if (competition.rules != null) ...[
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () => _showEventDetailsModal(context),
+                    icon: const Icon(Icons.info_outline),
+                    label: const Text('Detalle del evento'),
+                  ),
+                ],
+              ),
+              if (_shouldShowStandings()) ...[
                 const SizedBox(height: 16),
                 Text(
-                  'Reglas',
+                  'Tabla de Posiciones',
                   style: AppTheme.titleStyle,
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  competition.rules.toString(),
-                  style: AppTheme.captionStyle,
-                ),
+                _buildStandingsTable(context),
               ],
             ],
           ),
         ),
       ),
+    );
+  }
+
+  void _showEventDetailsModal(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Detalle del Evento'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDetailRow('Tipo de evento', _getTypeLabel()),
+                _buildDetailRow('Estado', _getStatusLabel()),
+                _buildDetailRow('Fecha de inicio', DateFormat('dd/MM/yyyy').format(competition.startDate)),
+                if (competition.endDate != null)
+                  _buildDetailRow('Fecha de fin', DateFormat('dd/MM/yyyy').format(competition.endDate!)),
+                _buildDetailRow('Premio', '\$${NumberFormatUtils.money(competition.prizePool)}'),
+                _buildDetailRow('Participantes', '${competition.participantCount} equipos'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -404,6 +439,141 @@ class CompetitionDetailsScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildStandingsTable(BuildContext context) {
+    return Consumer<TeamProvider>(
+      builder: (context, teamProvider, child) {
+        final teams = _resolveStandingsTeams(teamProvider.teams);
+
+        if (teams.isEmpty) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text('No hay datos suficientes para mostrar la tabla.'),
+          );
+        }
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            columns: const [
+              DataColumn(label: Text('Pos')),
+              DataColumn(label: Text('Equipo')),
+              DataColumn(label: Text('PJ')),
+              DataColumn(label: Text('PTS')),
+              DataColumn(label: Text('DG')),
+            ],
+            rows: List<DataRow>.generate(teams.length, (index) {
+              final team = teams[index];
+              final position = _getTeamPosition(team) ?? (index + 1);
+              final played = _getTeamStat(team, 'matchesPlayed', fallback: team.stats?.matchesPlayed ?? 0);
+              final points = _getTeamStat(team, 'points', fallback: team.stats?.points ?? 0);
+              final goalDiff = _getTeamStat(team, 'goalDifference', fallback: team.stats?.goalDifference ?? 0);
+
+              return DataRow(
+                cells: [
+                  DataCell(Text(position.toString())),
+                  DataCell(SizedBox(width: 140, child: Text(team.name, overflow: TextOverflow.ellipsis))),
+                  DataCell(Text('$played')),
+                  DataCell(Text('$points')),
+                  DataCell(Text('$goalDiff')),
+                ],
+              );
+            }),
+          ),
+        );
+      },
+    );
+  }
+
+  List<Team> _resolveStandingsTeams(List<Team> allTeams) {
+    final participantIds = competition.participantTeamIds.toSet();
+    final participants = participantIds.isEmpty
+        ? allTeams.where((t) => _getCompetitionStats(t) != null || t.stats != null).toList()
+        : allTeams.where((t) => participantIds.contains(t.id)).toList();
+
+    participants.sort((a, b) {
+      final ap = _getTeamStat(a, 'points', fallback: a.stats?.points ?? 0);
+      final bp = _getTeamStat(b, 'points', fallback: b.stats?.points ?? 0);
+      if (bp != ap) return bp.compareTo(ap);
+      final ad = _getTeamStat(a, 'goalDifference', fallback: a.stats?.goalDifference ?? 0);
+      final bd = _getTeamStat(b, 'goalDifference', fallback: b.stats?.goalDifference ?? 0);
+      if (bd != ad) return bd.compareTo(ad);
+      return a.name.compareTo(b.name);
+    });
+
+    return participants;
+  }
+
+  Map<String, dynamic>? _getCompetitionStats(Team team) {
+    final source = team.competitionStats;
+    if (source == null || source.isEmpty) return null;
+
+    final byId = source[competition.id];
+    if (byId is Map<String, dynamic>) return byId;
+
+    final byName = source[competition.name];
+    if (byName is Map<String, dynamic>) return byName;
+
+    final byIdLower = source[competition.id.toLowerCase()];
+    if (byIdLower is Map<String, dynamic>) return byIdLower;
+
+    final byNameLower = source[competition.name.toLowerCase()];
+    if (byNameLower is Map<String, dynamic>) return byNameLower;
+
+    return null;
+  }
+
+  int _getTeamStat(Team team, String key, {required int fallback}) {
+    final stats = _getCompetitionStats(team);
+    if (stats == null) return fallback;
+
+    final aliases = _statAliases(key);
+    for (final alias in aliases) {
+      if (stats.containsKey(alias)) {
+        return _dynamicToInt(stats[alias], fallback: fallback);
+      }
+    }
+    return fallback;
+  }
+
+  int? _getTeamPosition(Team team) {
+    final stats = _getCompetitionStats(team);
+    if (stats != null) {
+      for (final alias in const ['position', 'posicion', 'puesto', 'ranking']) {
+        if (stats.containsKey(alias)) {
+          return _dynamicToInt(stats[alias], fallback: team.stats?.position ?? 0);
+        }
+      }
+    }
+
+    final fallback = team.stats?.position;
+    return fallback == null || fallback <= 0 ? null : fallback;
+  }
+
+  List<String> _statAliases(String key) {
+    switch (key) {
+      case 'matchesPlayed':
+        return const ['matchesPlayed', 'pj', 'partidosJugados', 'partidos_jugados'];
+      case 'points':
+        return const ['points', 'puntos', 'pts'];
+      case 'goalDifference':
+        return const ['goalDifference', 'dg', 'diferenciaDeGoles', 'diferencia_goles'];
+      default:
+        return [key];
+    }
+  }
+
+  int _dynamicToInt(dynamic value, {required int fallback}) {
+    if (value == null) return fallback;
+    if (value is int) return value;
+    if (value is double) return value.round();
+    return int.tryParse(value.toString()) ?? fallback;
+  }
+
   String _getTypeLabel() {
     switch (competition.type) {
       case CompetitionType.league:
@@ -424,6 +594,20 @@ class CompetitionDetailsScreen extends StatelessWidget {
       case CompetitionStatus.completed:
         return 'Finalizada';
     }
+  }
+
+  bool _shouldShowStandings() {
+    final rules = competition.rules;
+    if (rules != null && rules.containsKey('hasStandings')) {
+      final value = rules['hasStandings'];
+      if (value is bool) return value;
+      if (value is num) return value != 0;
+      final parsed = value.toString().trim().toLowerCase();
+      return parsed == 'true' || parsed == '1' || parsed == 'si' || parsed == 'sí' || parsed == 'yes';
+    }
+
+    // Default behavior if option is not provided.
+    return competition.type == CompetitionType.league;
   }
 
 }

@@ -2,6 +2,16 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "Flutter Clean",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"clean"
+			],
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
 			"label": "Flutter Run",
 			"type": "shell",
 			"command": "flutter run",
@@ -24,6 +34,16 @@
 			"problemMatcher": [
 				"$tsc"
 			],
+			"group": "build"
+		},
+		{
+			"label": "Flutter Clean and Run",
+			"dependsOn": [
+				"Flutter Clean",
+				"Flutter Run Debug"
+			],
+			"dependsOrder": "sequence",
+			"problemMatcher": [],
 			"group": "build"
 		}
 	]

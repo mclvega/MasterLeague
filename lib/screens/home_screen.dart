@@ -13,7 +13,6 @@ import 'package:intl/intl.dart';
 import 'players/players_screen.dart';
 import 'teams/teams_screen.dart';
 import 'competitions/competitions_screen.dart';
-import 'free_agents/free_agents_screen.dart';
 import 'settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -32,7 +31,6 @@ class _HomeScreenState extends State<HomeScreen> {
         const PlayersScreen(),
         const TeamsScreen(),
         CompetitionsScreen(initialTabIndex: _eventsInitialTab),
-        const FreeAgentsScreen(),
       ];
 
   @override
@@ -113,10 +111,6 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.emoji_events),
             label: 'Eventos',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_add_disabled),
-            label: 'Libres',
-          ),
         ],
       ),
     );
@@ -132,6 +126,20 @@ class DashboardTab extends StatefulWidget {
 
 class _DashboardTabState extends State<DashboardTab>
     with TickerProviderStateMixin {
+  double _dashboardPrimaryCardMinHeight(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < 380) return 190;
+    if (width < 700) return 220;
+    return 250;
+  }
+
+  double _eventPreviewCardMinHeight(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < 380) return 84;
+    if (width < 700) return 96;
+    return 104;
+  }
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -359,57 +367,65 @@ class _DashboardTabState extends State<DashboardTab>
     CompetitionProvider competitionProvider,
     SettingsProvider settingsProvider,
   ) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'Inicio',
-            style: AppTheme.headlineStyle,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-
-          // Tarjeta del equipo por defecto o mensaje de guía
-          if (settingsProvider.hasDefaultTeam) ...[
-            _buildDefaultTeamDetails(context, settingsProvider, teamProvider, playerProvider),
-            const SizedBox(height: 20),
-          ] else ...[
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    const Icon(Icons.info_outline, color: AppTheme.primaryColor, size: 32),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Selecciona tu equipo en configuración para mostrar estadísticas personalizadas.',
-                      textAlign: TextAlign.center,
-                      style: AppTheme.bodyStyle,
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const SettingsScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.settings),
-                      label: const Text('Ir a configuración'),
-                    ),
-                  ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight - 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Inicio',
+                  style: AppTheme.headlineStyle,
+                  textAlign: TextAlign.center,
                 ),
-              ),
+                const SizedBox(height: 20),
+                if (settingsProvider.hasDefaultTeam) ...[
+                  _buildDefaultTeamDetails(context, settingsProvider, teamProvider, playerProvider),
+                  const SizedBox(height: 20),
+                ] else ...[
+                  Card(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: _dashboardPrimaryCardMinHeight(context)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.info_outline, color: AppTheme.primaryColor, size: 32),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Selecciona tu equipo en configuración para mostrar estadísticas personalizadas.',
+                              textAlign: TextAlign.center,
+                              style: AppTheme.bodyStyle,
+                            ),
+                            const SizedBox(height: 12),
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const SettingsScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.settings),
+                              label: const Text('Ir a configuración'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+                _buildEventsSummary(context, competitionProvider),
+              ],
             ),
-            const SizedBox(height: 20),
-          ],
-
-          _buildEventsSummary(context, competitionProvider),
-        ],
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -421,37 +437,40 @@ class _DashboardTabState extends State<DashboardTab>
     final upcomingEvents = competitionProvider.upcomingCompetitions;
 
     return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _navigateToEventsTab(context, 0),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Eventos',
-                style: AppTheme.titleStyle,
-              ),
-              const SizedBox(height: 12),
-              _buildEventPreviewList(
-                context: context,
-                title: 'Activos ahora',
-                events: activeEvents,
-                color: AppTheme.successColor,
-                emptyText: 'No hay eventos activos en este momento.',
-                targetTabIndex: 1,
-              ),
-              const SizedBox(height: 10),
-              _buildEventPreviewList(
-                context: context,
-                title: 'Próximos eventos',
-                events: upcomingEvents,
-                color: AppTheme.infoColor,
-                emptyText: 'No hay eventos próximos.',
-                targetTabIndex: 2,
-              ), 
-            ],
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: _dashboardPrimaryCardMinHeight(context)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _navigateToEventsTab(context, 0),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Eventos',
+                  style: AppTheme.titleStyle,
+                ),
+                const SizedBox(height: 12),
+                _buildEventPreviewList(
+                  context: context,
+                  title: 'Activos ahora',
+                  events: activeEvents,
+                  color: AppTheme.successColor,
+                  emptyText: 'No hay eventos activos en este momento.',
+                  targetTabIndex: 1,
+                ),
+                const SizedBox(height: 10),
+                _buildEventPreviewList(
+                  context: context,
+                  title: 'Próximos eventos',
+                  events: upcomingEvents,
+                  color: AppTheme.infoColor,
+                  emptyText: 'No hay eventos próximos.',
+                  targetTabIndex: 2,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -473,6 +492,7 @@ class _DashboardTabState extends State<DashboardTab>
       onTap: () => _navigateToEventsTab(context, targetTabIndex),
       child: Container(
         width: double.infinity,
+        constraints: BoxConstraints(minHeight: _eventPreviewCardMinHeight(context)),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: color.withOpacity(0.06),
@@ -531,11 +551,17 @@ class _DashboardTabState extends State<DashboardTab>
 
     if (defaultTeam == null) {
       return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            'No se encontró el equipo por defecto en la lista actual.',
-            style: AppTheme.bodyStyle.copyWith(color: Colors.grey[700]),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: _dashboardPrimaryCardMinHeight(context)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Center(
+              child: Text(
+                'No se encontró el equipo por defecto en la lista actual.',
+                textAlign: TextAlign.center,
+                style: AppTheme.bodyStyle.copyWith(color: Colors.grey[700]),
+              ),
+            ),
           ),
         ),
       );
@@ -672,63 +698,6 @@ class _DashboardTabState extends State<DashboardTab>
   }
 
   
-  Widget _buildRecentActivity(
-    BuildContext context,
-    PlayerProvider playerProvider,
-    TeamProvider teamProvider,
-    CompetitionProvider competitionProvider,
-  ) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Actividad Reciente',
-              style: AppTheme.titleStyle,
-            ),
-            const SizedBox(height: 12),
-            if (competitionProvider.ongoingCompetitions.isNotEmpty) ...[
-              ListTile(
-                leading: const Icon(Icons.sports_soccer, color: AppTheme.successColor),
-                title: Text('${competitionProvider.ongoingCompetitions.length} eventos activos'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () => _navigateToTab(context, 3),
-              ),
-            ],
-            if (playerProvider.freeAgents.isNotEmpty) ...[
-              ListTile(
-                leading: const Icon(Icons.person_add, color: AppTheme.warningColor),
-                title: Text('${playerProvider.freeAgents.length} jugadores libres disponibles'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () => _navigateToTab(context, 4),
-              ),
-            ],
-            if (teamProvider.teams.isNotEmpty) ...[
-              ListTile(
-                leading: const Icon(Icons.group, color: AppTheme.infoColor),
-                title: Text('${teamProvider.teams.length} equipos registrados'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () => _navigateToTab(context, 2),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _navigateToTab(BuildContext context, int tabIndex) {
-    // Buscar el estado padre usando el contexto
-    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-    if (homeState != null) {
-      homeState.setState(() {
-        homeState._selectedIndex = tabIndex;
-      });
-    }
-  }
-
   void _navigateToEventsTab(BuildContext context, int eventsTabIndex) {
     final homeState = context.findAncestorStateOfType<_HomeScreenState>();
     if (homeState != null) {

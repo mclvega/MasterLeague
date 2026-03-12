@@ -92,11 +92,16 @@ class PlayerCard extends StatelessWidget {
                           color: AppTheme.primaryColor,
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          team.name,
-                          style: AppTheme.captionStyle.copyWith(
-                            color: AppTheme.primaryColor,
-                            fontWeight: FontWeight.w500,
+                        Expanded(
+                          child: Text(
+                            player.contractDurationFormatted != null
+                                ? '${team.name} • ${player.contractDurationFormatted}'
+                                : team.name,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTheme.captionStyle.copyWith(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ] else ...[
@@ -203,6 +208,14 @@ class PlayerDetailsScreen extends StatelessWidget {
               _buildDetailRow('Edad', '${player.age} años'),
               _buildDetailRow('Media', player.overall.toString()),
               _buildDetailRow('Precio', '\$${NumberFormatUtils.money(player.price)}'),
+              if (!player.isFreeAgent) ...[
+                if (player.contractDurationFormatted != null)
+                  _buildDetailRow('Duración de contrato', player.contractDurationFormatted!),
+                if (player.contractStart != null && player.contractStart!.trim().isNotEmpty)
+                  _buildDetailRow('Inicio de contrato', _formatContractDate(player.contractStart!)),
+                if (player.contractEnd != null && player.contractEnd!.trim().isNotEmpty)
+                  _buildDetailRow('Fin de contrato', _formatContractDate(player.contractEnd!)),
+              ],
               const SizedBox(height: 20),
               Consumer<TeamProvider>(
                 builder: (context, teamProvider, child) {
@@ -237,6 +250,26 @@ class PlayerDetailsScreen extends StatelessWidget {
                             'Propietario: ${team.ownerName}',
                             style: AppTheme.captionStyle,
                           ),
+                          if (player.contractDuration != null ||
+                              player.contractStart != null ||
+                              player.contractEnd != null) ...[
+                            const SizedBox(height: 10),
+                            const Divider(height: 1),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Contrato',
+                              style: AppTheme.subtitleStyle.copyWith(
+                                color: AppTheme.primaryColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (player.contractDuration != null)
+                              Text('Duración: ${player.contractDuration}', style: AppTheme.captionStyle),
+                            if (player.contractStart != null)
+                              Text('Inicio: ${player.contractStart}', style: AppTheme.captionStyle),
+                            if (player.contractEnd != null)
+                              Text('Fin: ${player.contractEnd}', style: AppTheme.captionStyle),
+                          ],
                         ],
                       ),
                     );
@@ -302,6 +335,16 @@ class PlayerDetailsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatContractDate(String raw) {
+    final parsed = DateTime.tryParse(raw.trim());
+    if (parsed == null) return raw;
+
+    final day = parsed.day.toString().padLeft(2, '0');
+    final month = parsed.month.toString().padLeft(2, '0');
+    final year = parsed.year.toString();
+    return '$day/$month/$year';
   }
 
 }

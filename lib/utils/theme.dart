@@ -111,13 +111,13 @@ class AppTheme {
 
   // Función para crear fondo con imagen (usa cache local si está disponible)
   static BoxDecoration get backgroundDecoration {
-    return const BoxDecoration(
+    return BoxDecoration(
       image: DecorationImage(
         image: NetworkImage(backgroundImageUrl),
         fit: BoxFit.cover,
         opacity: 0.1,
       ),
-      gradient: LinearGradient(
+      gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
@@ -130,7 +130,7 @@ class AppTheme {
 
   // Función para crear fondo con imagen más prominente
   static BoxDecoration get prominentBackgroundDecoration {
-    return const BoxDecoration(
+    return BoxDecoration(
       image: DecorationImage(
         image: NetworkImage(backgroundImageUrl),
         fit: BoxFit.cover,

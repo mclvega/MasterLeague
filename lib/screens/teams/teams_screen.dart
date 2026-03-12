@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../models/player.dart';
 import '../../providers/team_provider.dart';
 import '../../providers/player_provider.dart';
 import '../../models/team.dart';
@@ -116,7 +117,7 @@ class TeamCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final teamPlayers = playerProvider.getPlayersByTeam(team.id);
-    final totalValue = team.teamValue ?? teamPlayers.fold<double>(
+    final totalValue = teamPlayers.fold<double>(
       0, 
       (sum, player) => sum + player.price,
     );
@@ -408,7 +409,7 @@ class TeamCard extends StatelessWidget {
                     child: TabBarView(
                       children: [
                         _buildSquadTab(teamPlayers),
-                        _buildFinancesTab(),
+                        _buildFinancesTab(teamPlayers),
                         _buildStatsTab(),
                       ],
                     ),
@@ -422,7 +423,7 @@ class TeamCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSquadTab(List<dynamic> teamPlayers) {
+  Widget _buildSquadTab(List<Player> teamPlayers) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -445,6 +446,20 @@ class TeamCard extends StatelessWidget {
                   itemCount: teamPlayers.length,
                   itemBuilder: (context, index) {
                     final player = teamPlayers[index];
+                    final contractPeriod = _buildContractPeriod(
+                      player.contractStart,
+                      player.contractEnd,
+                    );
+                    final contractDuration = player.contractDurationFormatted;
+
+                    final subtitle = StringBuffer('${player.club} • OVR ${player.overall}');
+                    if (contractPeriod != null || contractDuration != null) {
+                      subtitle.write('\nContrato: ${contractPeriod ?? 'Sin fechas'}');
+                      if (contractDuration != null) {
+                        subtitle.write(' • $contractDuration');
+                      }
+                    }
+
                     return ListTile(
                       leading: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -461,7 +476,7 @@ class TeamCard extends StatelessWidget {
                         ),
                       ),
                       title: Text(player.name),
-                      subtitle: Text('${player.club} • OVR ${player.overall}'),
+                      subtitle: Text(subtitle.toString()),
                       trailing: Text(
                         '\$${NumberFormatUtils.money(player.price)}',
                         style: const TextStyle(
@@ -477,7 +492,34 @@ class TeamCard extends StatelessWidget {
     );
   }
 
-  Widget _buildFinancesTab() {
+  String? _buildContractPeriod(String? start, String? end) {
+    final startFormatted = _formatDate(start);
+    final endFormatted = _formatDate(end);
+
+    if (startFormatted == null && endFormatted == null) return null;
+    if (startFormatted != null && endFormatted != null) {
+      return '$startFormatted - $endFormatted';
+    }
+    return startFormatted ?? endFormatted;
+  }
+
+  String? _formatDate(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final parsed = DateTime.tryParse(raw.trim());
+    if (parsed == null) return raw;
+
+    final day = parsed.day.toString().padLeft(2, '0');
+    final month = parsed.month.toString().padLeft(2, '0');
+    final year = parsed.year.toString();
+    return '$day/$month/$year';
+  }
+
+  Widget _buildFinancesTab(List<dynamic> teamPlayers) {
+    final squadValue = teamPlayers.fold<double>(
+      0,
+      (sum, player) => sum + player.price,
+    );
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -498,7 +540,7 @@ class TeamCard extends StatelessWidget {
             const SizedBox(height: 12),
             _buildFinanceDetailCard(
               'Valor de la Plantilla',
-              '\$${NumberFormatUtils.money(team.finances!.squadValue)}',
+              '\$${NumberFormatUtils.money(squadValue)}',
               Icons.trending_up,
               AppTheme.successColor,
             ),
