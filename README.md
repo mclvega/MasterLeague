@@ -179,6 +179,10 @@ Este proyecto está licenciado bajo la Licencia MIT. Ver el archivo `LICENSE` pa
 
 Para soporte o consultas, please contact [tu-email@ejemplo.com]
 
+## Nombre Carpeta Publicación
+
+dart run change_app_package_name:main com.mclvega.master_league 
+
 ---
 
 **¡Disfruta gestionando tu liga master de fútbol! ⚽**
