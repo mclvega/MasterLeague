@@ -5,6 +5,8 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+project.setProperty("archivesBaseName", "MRRICHAR")
+
 android {
     namespace = "com.example.master_league"
     compileSdk = flutter.compileSdkVersion

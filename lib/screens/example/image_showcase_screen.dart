@@ -262,8 +262,8 @@ class _ImageShowcaseScreenState extends State<ImageShowcaseScreen> {
                             
                             _TechnicalInfo('URLs de origen'),
                             const SizedBox(height: 8),
-                            _TechnicalDetail('Logo', 'https://mrrichar.netlify.app/logo.png'),
-                            _TechnicalDetail('Fondo', 'https://mrrichar.netlify.app/fondo-default.png'),
+                            _TechnicalDetail('Logo', 'https://mrrichar.netlify.app/Logo%20Liga%20Master_.png'),
+                            _TechnicalDetail('Fondo', 'https://mrrichar.netlify.app/fondo-default1.png'),
                             
                             const SizedBox(height: 16),
                             _TechnicalInfo('Rutas locales'),

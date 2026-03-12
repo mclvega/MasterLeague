@@ -1,15 +1,29 @@
 import 'package:flutter/foundation.dart';
 import '../models/competition.dart';
+import '../models/match_fixture.dart';
 import '../services/file_import_service_simple.dart';
 
 class CompetitionProvider with ChangeNotifier {
   final List<Competition> _competitions = [];
+  final List<MatchFixture> _fixtures = [];
   bool _isLoading = false;
   String? _error;
 
   List<Competition> get competitions => _competitions;
+  List<MatchFixture> get fixtures => _fixtures;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  List<MatchFixture> getFixturesByEvent(String eventId) {
+    final eventFixtures = _fixtures.where((fixture) => fixture.eventId == eventId).toList();
+    eventFixtures.sort((a, b) {
+      if (a.matchday != b.matchday) {
+        return a.matchday.compareTo(b.matchday);
+      }
+      return a.kickoffDate.compareTo(b.kickoffDate);
+    });
+    return eventFixtures;
+  }
 
   List<Competition> get upcomingCompetitions =>
       _competitions.where((comp) => comp.status == CompetitionStatus.upcoming).toList();
@@ -36,6 +50,7 @@ class CompetitionProvider with ChangeNotifier {
 
   void addCompetition(Competition competition) {
     _competitions.add(competition);
+    _sortCompetitionsAlphabetically();
     notifyListeners();
   }
 
@@ -43,6 +58,7 @@ class CompetitionProvider with ChangeNotifier {
     final index = _competitions.indexWhere((comp) => comp.id == updatedCompetition.id);
     if (index != -1) {
       _competitions[index] = updatedCompetition;
+      _sortCompetitionsAlphabetically();
       notifyListeners();
     }
   }
@@ -109,6 +125,10 @@ class CompetitionProvider with ChangeNotifier {
     ).toList();
   }
 
+  void _sortCompetitionsAlphabetically() {
+    _competitions.sort((a, b) => a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase()));
+  }
+
   void sortCompetitions(String sortBy, {bool ascending = true}) {
     switch (sortBy) {
       case 'name':
@@ -137,6 +157,7 @@ class CompetitionProvider with ChangeNotifier {
 
   void clearCompetitions() {
     _competitions.clear();
+    _fixtures.clear();
     notifyListeners();
   }
 
@@ -150,12 +171,16 @@ class CompetitionProvider with ChangeNotifier {
       setError(null);
 
       _competitions.clear();
+      _fixtures.clear();
       notifyListeners();
 
       final Map<String, dynamic> data = await FileImportService.downloadAndLoadExcelData(excelUrl);
 
       final List<Competition> importedCompetitions = data['competitions'] ?? [];
+      final List<MatchFixture> importedFixtures = data['fixtures'] ?? [];
       _competitions.addAll(importedCompetitions);
+      _fixtures.addAll(importedFixtures);
+      _sortCompetitionsAlphabetically();
 
       if (_competitions.isEmpty) {
         setError('No se encontraron eventos en los datos');

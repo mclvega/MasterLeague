@@ -4,6 +4,22 @@ import '../services/file_import_service_simple.dart';
 import '../utils/position_utils.dart';
 
 class PlayerProvider with ChangeNotifier {
+  static const Map<String, int> _positionSortOrder = {
+    'PT': 1,
+    'DEC': 2,
+    'LI': 3,
+    'LD': 4,
+    'MCD': 5,
+    'MC': 6,
+    'MDI': 7,
+    'MDD': 8,
+    'MO': 9,
+    'EXI': 10,
+    'EXD': 11,
+    'SD': 12,
+    'DC': 13,
+  };
+
   final List<Player> _players = [];
   List<Player> _filteredPlayers = [];
   bool _isLoading = false;
@@ -20,10 +36,16 @@ class PlayerProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  List<Player> get freeAgents => _players.where((player) => player.isFreeAgent).toList();
+  List<Player> get freeAgents {
+    final agents = _players.where((player) => player.isFreeAgent).toList();
+    agents.sort((a, b) => a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase()));
+    return agents;
+  }
 
   List<Player> getPlayersByTeam(String teamId) {
-    return _players.where((player) => player.teamId == teamId).toList();
+    final teamPlayers = _players.where((player) => player.teamId == teamId).toList();
+    teamPlayers.sort((a, b) => a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase()));
+    return teamPlayers;
   }
 
   void setLoading(bool loading) {
@@ -38,6 +60,7 @@ class PlayerProvider with ChangeNotifier {
 
   void addPlayer(Player player) {
     _players.add(player);
+    _sortPlayersAlphabetically();
     _filteredPlayers = List.from(_players);
     notifyListeners();
   }
@@ -46,6 +69,7 @@ class PlayerProvider with ChangeNotifier {
     final index = _players.indexWhere((player) => player.id == updatedPlayer.id);
     if (index != -1) {
       _players[index] = updatedPlayer;
+      _sortPlayersAlphabetically();
       _filteredPlayers = List.from(_players);
       notifyListeners();
     }
@@ -53,6 +77,7 @@ class PlayerProvider with ChangeNotifier {
 
   void removePlayer(String playerId) {
     _players.removeWhere((player) => player.id == playerId);
+    _sortPlayersAlphabetically();
     _filteredPlayers = List.from(_players);
     notifyListeners();
   }
@@ -129,6 +154,15 @@ class PlayerProvider with ChangeNotifier {
           matchesMinPrice &&
           matchesMaxPrice;
     }).toList();
+    _sortFilteredPlayersAlphabetically();
+  }
+
+  void _sortPlayersAlphabetically() {
+    _players.sort((a, b) => a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase()));
+  }
+
+  void _sortFilteredPlayersAlphabetically() {
+    _filteredPlayers.sort((a, b) => a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase()));
   }
 
   void sortPlayers(String sortBy, {bool ascending = true}) {
@@ -153,8 +187,25 @@ class PlayerProvider with ChangeNotifier {
             ? a.age.compareTo(b.age) 
             : b.age.compareTo(a.age));
         break;
+      case 'position':
+        _filteredPlayers.sort((a, b) {
+          final posA = _positionOrderForPlayer(a);
+          final posB = _positionOrderForPlayer(b);
+          if (posA != posB) {
+            return ascending ? posA.compareTo(posB) : posB.compareTo(posA);
+          }
+
+          final nameCompare = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          return ascending ? nameCompare : -nameCompare;
+        });
+        break;
     }
     notifyListeners();
+  }
+
+  int _positionOrderForPlayer(Player player) {
+    final normalized = PositionUtils.normalize(player.position).toUpperCase();
+    return _positionSortOrder[normalized] ?? 999;
   }
 
   Future<void> importPlayersFromFile(String filePath, {bool isUrl = false}) async {
@@ -184,6 +235,7 @@ class PlayerProvider with ChangeNotifier {
         // Load players
         List<Player> importedPlayers = data['players'] ?? [];
         _players.addAll(importedPlayers);
+        _sortPlayersAlphabetically();
         _searchQuery = '';
         _positionFilter = null;
         _teamFilter = null;
@@ -256,6 +308,7 @@ class PlayerProvider with ChangeNotifier {
     
     _players.clear();
     _players.addAll(emergencyPlayers);
+    _sortPlayersAlphabetically();
     _searchQuery = '';
     _positionFilter = null;
     _teamFilter = null;

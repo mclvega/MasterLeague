@@ -7,6 +7,7 @@ import '../../models/team.dart';
 import '../../utils/number_format_utils.dart';
 import '../../utils/theme.dart';
 import 'package:intl/intl.dart';
+import 'competition_fixture_screen.dart';
 
 class CompetitionsScreen extends StatelessWidget {
   final int initialTabIndex;
@@ -28,26 +29,27 @@ class CompetitionsScreen extends StatelessWidget {
                 children: [
                   const Icon(
                     Icons.emoji_events,
-                    color: AppTheme.accentColor,
+                    color: AppTheme.backgroundColor,
                     size: 28,
                   ),
                   const SizedBox(width: 12),
                   Text(
                     'Eventos',
-                    style: AppTheme.headlineStyle,
+                    style: AppTheme.headlineStyle.copyWith(color: Colors.white),
+                    textAlign: TextAlign.center,
                   ),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppTheme.accentColor.withOpacity(0.2),
+                      color: AppTheme.backgroundColor.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppTheme.accentColor),
+                      border: Border.all(color: AppTheme.backgroundColor),
                     ),
                     child: Text(
                       competitionProvider.competitions.length.toString(),
                       style: const TextStyle(
-                        color: Colors.black,
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -74,14 +76,14 @@ class CompetitionsScreen extends StatelessWidget {
         child: Column(
           children: [
             const TabBar(
-              labelColor: AppTheme.primaryColor,
+              labelColor: AppTheme.backgroundColor,
               unselectedLabelColor: Colors.grey,
-              indicatorColor: AppTheme.primaryColor,
+              indicatorColor: AppTheme.backgroundColor,
               tabs: [
-                Tab(text: 'Todas'),
-                Tab(text: 'Activas'),
-                Tab(text: 'Próximas'),
-                Tab(text: 'Finalizadas'),
+                Tab(text: 'Todos'),
+                Tab(text: 'Activos'),
+                Tab(text: 'Próximos'),
+                Tab(text: 'Finalizados'),
               ],
             ),
             Expanded(
@@ -168,13 +170,14 @@ class CompetitionCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   _buildStatusChip(),
                   const Spacer(),
-                  Text(
-                    '\$${NumberFormatUtils.money(competition.prizePool)}',
-                    style: AppTheme.titleStyle.copyWith(
-                      color: AppTheme.accentColor,
-                      fontWeight: FontWeight.bold,
+                  if (competition.prizePool > 0)
+                    Text(
+                      '\$${NumberFormatUtils.money(competition.prizePool)}',
+                      style: AppTheme.titleStyle.copyWith(
+                        color: AppTheme.infoColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -199,6 +202,13 @@ class CompetitionCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     DateFormat('dd/MM/yyyy').format(competition.startDate),
+                    style: AppTheme.captionStyle,
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    DateFormat('dd/MM/yyyy').format(competition.endDate!),
                     style: AppTheme.captionStyle,
                   ),
                   const SizedBox(width: 16),
@@ -232,6 +242,10 @@ class CompetitionCard extends StatelessWidget {
         break;
       case CompetitionType.tournament:
         color = AppTheme.secondaryColor;
+        label = 'Torneo';
+        break;
+      case CompetitionType.event:
+        color = Colors.deepOrange;
         label = 'Evento';
         break;
     }
@@ -366,6 +380,12 @@ class CompetitionDetailsScreen extends StatelessWidget {
                     icon: const Icon(Icons.info_outline),
                     label: const Text('Detalle del evento'),
                   ),
+                  if (_shouldShowStandings())
+                    ElevatedButton.icon(
+                      onPressed: () => _openFixtureScreen(context),
+                      icon: const Icon(Icons.view_list),
+                      label: const Text('Ver fixture'),
+                    ),
                 ],
               ),
               if (_shouldShowStandings()) ...[
@@ -380,6 +400,14 @@ class CompetitionDetailsScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _openFixtureScreen(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CompetitionFixtureScreen(competition: competition),
       ),
     );
   }
@@ -581,6 +609,8 @@ class CompetitionDetailsScreen extends StatelessWidget {
       case CompetitionType.cup:
         return 'Copa';
       case CompetitionType.tournament:
+        return 'Torneo';
+      case CompetitionType.event:
         return 'Evento';
     }
   }

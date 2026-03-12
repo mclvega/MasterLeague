@@ -25,6 +25,7 @@ class TeamProvider with ChangeNotifier {
 
   void addTeam(Team team) {
     _teams.add(team);
+    _sortTeamsAlphabetically();
     notifyListeners();
   }
 
@@ -32,6 +33,7 @@ class TeamProvider with ChangeNotifier {
     final index = _teams.indexWhere((team) => team.id == updatedTeam.id);
     if (index != -1) {
       _teams[index] = updatedTeam;
+      _sortTeamsAlphabetically();
       notifyListeners();
     }
   }
@@ -96,6 +98,10 @@ class TeamProvider with ChangeNotifier {
     return sortedTeams;
   }
 
+  void _sortTeamsAlphabetically() {
+    _teams.sort((a, b) => a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase()));
+  }
+
   List<Team> getTeamsSortedByPlayerCount({bool ascending = false}) {
     final sortedTeams = List<Team>.from(_teams);
     sortedTeams.sort((a, b) => ascending 
@@ -130,6 +136,7 @@ class TeamProvider with ChangeNotifier {
         // Load teams
         List<Team> importedTeams = data['teams'] ?? [];
         _teams.addAll(importedTeams);
+        _sortTeamsAlphabetically();
         
         // Guardar en cache local
         await saveTeamsToCache(_teams);
@@ -173,6 +180,7 @@ class TeamProvider with ChangeNotifier {
       _teams
         ..clear()
         ..addAll(cachedTeams);
+      _sortTeamsAlphabetically();
       
       print('💾 Equipos cargados desde cache: ${_teams.length}');
       

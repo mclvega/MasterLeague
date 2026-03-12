@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-enum CompetitionType { league, cup, tournament }
+enum CompetitionType { league, cup, tournament, event }
 
 enum CompetitionStatus { upcoming, ongoing, completed }
 
@@ -30,13 +30,12 @@ class Competition {
   });
 
   factory Competition.fromMap(Map<String, dynamic> map) {
+    final rawType = map['type']?.toString() ?? '';
+
     return Competition(
       id: map['id']?.toString() ?? '',
       name: map['name']?.toString() ?? '',
-      type: CompetitionType.values.firstWhere(
-        (e) => e.toString().split('.').last == map['type'],
-        orElse: () => CompetitionType.league,
-      ),
+      type: _parseCompetitionType(rawType),
       status: CompetitionStatus.values.firstWhere(
         (e) => e.toString().split('.').last == map['status'],
         orElse: () => CompetitionStatus.upcoming,
@@ -105,4 +104,25 @@ class Competition {
   bool get isActive => status == CompetitionStatus.ongoing;
   
   bool get hasEnded => status == CompetitionStatus.completed;
+
+  static CompetitionType _parseCompetitionType(String input) {
+    final value = input.trim().toLowerCase();
+
+    switch (value) {
+      case 'league':
+      case 'liga':
+        return CompetitionType.league;
+      case 'cup':
+      case 'copa':
+        return CompetitionType.cup;
+      case 'tournament':
+      case 'torneo':
+        return CompetitionType.tournament;
+      case 'event':
+      case 'evento':
+        return CompetitionType.event;
+      default:
+        return CompetitionType.league;
+    }
+  }
 }

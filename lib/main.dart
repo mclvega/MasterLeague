@@ -10,7 +10,7 @@ import 'utils/theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  print('🚀 Iniciando Liga Master MRRICHAR...');
+  print('🚀 Iniciando MRRICHAR...');
   
   runApp(const MyApp());
 }
@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CompetitionProvider()),
       ],
       child: MaterialApp(
-        title: 'Liga Master MRRICHAR',
+        title: 'MRRICHAR',
         theme: AppTheme.lightTheme,
         home: const HomeScreen(), // Ir directo al home sin splash
         debugShowCheckedModeBanner: false,

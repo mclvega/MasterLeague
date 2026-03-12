@@ -184,7 +184,7 @@ class _SplashScreenState extends State<SplashScreen>
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.network(
-                                'https://mrrichar.netlify.app/logo.png',
+                                'https://mrrichar.netlify.app/Logo%20Liga%20Master_.png',
                                 width: 80,
                                 height: 80,
                                 fit: BoxFit.contain,

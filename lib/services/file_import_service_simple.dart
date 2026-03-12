@@ -7,6 +7,7 @@ import 'dart:io';
 import '../models/player.dart';
 import '../models/team.dart';
 import '../models/competition.dart';
+import '../models/match_fixture.dart';
 
 class FileImportService {
   static Future<Map<String, dynamic>> downloadAndLoadExcelData(String url) async {
@@ -39,6 +40,7 @@ class FileImportService {
           'players': parsed['players']!,
           'teams': parsed['teams']!,
           'competitions': parsed['competitions']!,
+          'fixtures': parsed['fixtures']!,
         };
       } else {
         throw Exception('❌ Error HTTP descargando Excel: ${response.statusCode}');
@@ -60,6 +62,7 @@ class FileImportService {
             'players': parsed['players']!,
             'teams': parsed['teams']!,
             'competitions': parsed['competitions']!,
+            'fixtures': parsed['fixtures']!,
           };
         }
       } catch (localError) {
@@ -92,23 +95,98 @@ class FileImportService {
     }
 
     final sheets = excel.tables.values.toList();
-    final playersRows = sheets.isNotEmpty ? sheets[0].rows : <List<Data?>>[];
-    final teamsRows = sheets.length > 1 ? sheets[1].rows : <List<Data?>>[];
-    final competitionsRows = sheets.length > 2 ? sheets[2].rows : <List<Data?>>[];
+    final playersRows = _findRowsBySheetName(excel, ['jugadores', 'players']) ??
+      (sheets.isNotEmpty ? sheets[0].rows : <List<Data?>>[]);
+    final teamsRows = _findRowsBySheetName(excel, ['equipos', 'teams']) ??
+      (sheets.length > 1 ? sheets[1].rows : <List<Data?>>[]);
+    final competitionsRows =
+      _findRowsBySheetName(excel, ['eventos', 'competiciones', 'competitions', 'events']) ??
+        (sheets.length > 2 ? sheets[2].rows : <List<Data?>>[]);
+    final fixturesRows = _findRowsBySheetName(excel, ['fixture', 'fixtures', 'calendario', 'cruces']) ??
+      (sheets.length > 3 ? sheets[3].rows : <List<Data?>>[]);
 
     final players = _parsePlayers(playersRows);
     final teams = _parseTeams(teamsRows);
     final competitions = _parseCompetitions(competitionsRows);
+    final fixtures = _parseFixtures(fixturesRows);
 
     print('⚽ Jugadores parseados (hoja 1): ${players.length}');
     print('🏟️ Equipos parseados (hoja 2): ${teams.length}');
     print('🏆 Competiciones parseadas (hoja 3): ${competitions.length}');
+    print('🗓️ Partidos fixture parseados: ${fixtures.length}');
 
     return {
       'players': players,
       'teams': teams,
       'competitions': competitions,
+      'fixtures': fixtures,
     };
+  }
+
+  static List<MatchFixture> _parseFixtures(List<List<Data?>> rows) {
+    if (rows.isEmpty) return [];
+    final headers = _headerMap(rows.first);
+    final fixtures = <MatchFixture>[];
+
+    for (var i = 1; i < rows.length; i++) {
+      final row = rows[i];
+      final eventId = _cell(row, headers, ['eventid', 'event_id', 'competitionid', 'competition_id'], fallbackIndex: 1);
+      final homeTeamId = _cell(row, headers, ['hometeamid', 'home_team_id', 'local', 'equipo_local'], fallbackIndex: 3);
+      final awayTeamId = _cell(row, headers, ['awayteamid', 'away_team_id', 'visitante', 'equipo_visitante'], fallbackIndex: 4);
+
+      if (eventId.isEmpty || homeTeamId.isEmpty || awayTeamId.isEmpty) {
+        continue;
+      }
+
+      final idValue = _cell(row, headers, ['id', 'fixtureid', 'fixture_id'], fallbackIndex: 0);
+      final matchday = _toInt(_cell(row, headers, ['matchday', 'jornada', 'fecha'], fallbackIndex: 2));
+      final homeGoalsText = _cell(row, headers, ['homegoals', 'home_goals', 'goleslocal', 'goles_local'], fallbackIndex: 5);
+      final awayGoalsText = _cell(row, headers, ['awaygoals', 'away_goals', 'golesvisitante', 'goles_visitante'], fallbackIndex: 6);
+      final kickoffDateText = _cell(row, headers, ['kickoffdate', 'kickoff_date', 'fecha_partido', 'fecha'], fallbackIndex: 7);
+
+      fixtures.add(
+        MatchFixture(
+          id: idValue.isEmpty ? 'fx_$i' : idValue,
+          eventId: eventId,
+          matchday: matchday <= 0 ? 1 : matchday,
+          homeTeamId: homeTeamId,
+          awayTeamId: awayTeamId,
+          homeGoals: homeGoalsText.isEmpty ? null : _toInt(homeGoalsText),
+          awayGoals: awayGoalsText.isEmpty ? null : _toInt(awayGoalsText),
+          kickoffDate: _toDate(kickoffDateText),
+          status: _cell(row, headers, ['status', 'estado'], fallbackIndex: 8),
+          venue: _nullable(_cell(row, headers, ['venue', 'estadio'], fallbackIndex: 9)),
+          notes: _nullable(_cell(row, headers, ['notes', 'nota', 'notas'], fallbackIndex: 10)),
+        ),
+      );
+    }
+
+    fixtures.sort((a, b) {
+      if (a.eventId != b.eventId) {
+        return a.eventId.compareTo(b.eventId);
+      }
+      if (a.matchday != b.matchday) {
+        return a.matchday.compareTo(b.matchday);
+      }
+      return a.kickoffDate.compareTo(b.kickoffDate);
+    });
+
+    return fixtures;
+  }
+
+  static List<List<Data?>>? _findRowsBySheetName(Excel excel, List<String> candidates) {
+    final normalizedCandidates = candidates.map(_normalizeSheetName).toSet();
+    for (final entry in excel.tables.entries) {
+      final normalizedName = _normalizeSheetName(entry.key);
+      if (normalizedCandidates.contains(normalizedName)) {
+        return entry.value.rows;
+      }
+    }
+    return null;
+  }
+
+  static String _normalizeSheetName(String value) {
+    return value.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 
   static List<Player> _parsePlayers(List<List<Data?>> rows) {
@@ -415,6 +493,7 @@ class FileImportService {
     final value = input.toLowerCase();
     if (value.contains('cup') || value.contains('copa')) return CompetitionType.cup;
     if (value.contains('tournament') || value.contains('torneo')) return CompetitionType.tournament;
+    if (value.contains('event') || value.contains('evento')) return CompetitionType.event;
     return CompetitionType.league;
   }
 

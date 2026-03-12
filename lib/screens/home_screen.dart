@@ -5,10 +5,8 @@ import '../providers/team_provider.dart';
 import '../providers/competition_provider.dart';
 import '../providers/settings_provider.dart';
 import '../models/competition.dart';
-import '../models/team.dart';
 import '../utils/theme.dart';
 import '../utils/number_format_utils.dart';
-import '../utils/position_utils.dart';
 import 'package:intl/intl.dart';
 import 'players/players_screen.dart';
 import 'teams/teams_screen.dart';
@@ -42,15 +40,18 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Row(
           children: [
             // Logo de la app
-            AppTheme.buildAppLogo(width: 32, height: 32),
+            AppTheme.buildAppLogo(width: 96, height: 96),
             const SizedBox(width: 12),
             const Expanded(
-              child: Text('Liga Master MRRICHAR'),
+              child: Text('MRRICHAR'),
             ),
           ],
         ),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
@@ -81,18 +82,24 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
+        showUnselectedLabels: true,
         onTap: (index) => setState(() {
           _selectedIndex = index;
           if (index == 3) {
             _eventsInitialTab = 0;
           }
         }),
-        selectedItemColor: AppTheme.primaryColor, // Color azul para seleccionado
-        unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.white,
-        elevation: 8,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white70,
+        backgroundColor: AppTheme.primaryColor,
+        elevation: 0,
         selectedLabelStyle: const TextStyle(
+          color: Colors.white,
           fontWeight: FontWeight.bold,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          color: Colors.white70,
+          fontWeight: FontWeight.w500,
         ),
         items: const [
           BottomNavigationBarItem(
@@ -376,9 +383,9 @@ class _DashboardTabState extends State<DashboardTab>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                Text(
                   'Inicio',
-                  style: AppTheme.headlineStyle,
+                  style: AppTheme.headlineStyle.copyWith(color: Colors.white),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20),
@@ -587,7 +594,7 @@ class _DashboardTabState extends State<DashboardTab>
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => DashboardTeamDetailsScreen(team: defaultTeam),
+              builder: (_) => TeamDetailsScreen(team: defaultTeam),
             ),
           );
         },
@@ -706,219 +713,5 @@ class _DashboardTabState extends State<DashboardTab>
         homeState._selectedIndex = 3;
       });
     }
-  }
-}
-
-class DashboardTeamDetailsScreen extends StatelessWidget {
-  final Team team;
-
-  const DashboardTeamDetailsScreen({
-    super.key,
-    required this.team,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final playerProvider = context.watch<PlayerProvider>();
-    final teamPlayers = playerProvider.getPlayersByTeam(team.id);
-
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(team.name),
-          backgroundColor: AppTheme.primaryColor,
-          foregroundColor: Colors.white,
-          bottom: const TabBar(
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            indicatorColor: Colors.white,
-            tabs: [
-              Tab(text: 'Plantilla'),
-              Tab(text: 'Finanzas'),
-              Tab(text: 'Estadísticas'),
-            ],
-          ),
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: AppTheme.primaryColor,
-                    radius: 24,
-                    child: Text(
-                      team.name.substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(team.name, style: AppTheme.headlineStyle),
-                        Text(team.ownerName, style: AppTheme.subtitleStyle),
-                        if (team.homeStadium != null)
-                          Text('🏟️ ${team.homeStadium}', style: AppTheme.captionStyle),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    _buildSquadTab(teamPlayers),
-                    _buildFinancesTab(teamPlayers),
-                    _buildStatsTab(),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSquadTab(List<dynamic> teamPlayers) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Plantilla (${teamPlayers.length} jugadores)',
-          style: AppTheme.titleStyle,
-        ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: teamPlayers.isEmpty
-              ? const Center(child: Text('No hay jugadores en este equipo'))
-              : ListView.builder(
-                  itemCount: teamPlayers.length,
-                  itemBuilder: (context, index) {
-                    final player = teamPlayers[index];
-                    return ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppTheme.getPositionColor(player.position),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          PositionUtils.normalize(player.position),
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      title: Text(player.name),
-                      subtitle: Text('${player.club} • Media ${player.overall}'),
-                      trailing: Text(
-                        '\$${NumberFormatUtils.money(player.price)}',
-                        style: const TextStyle(
-                          color: AppTheme.successColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFinancesTab(List<dynamic> teamPlayers) {
-    final totalValue = team.teamValue ?? teamPlayers.fold<double>(0, (sum, player) => sum + player.price);
-
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Información Financiera', style: AppTheme.titleStyle),
-          const SizedBox(height: 16),
-          _buildFinanceCard('Presupuesto', '\$${NumberFormatUtils.money(team.finances?.budgetRemaining ?? team.budget)}', Icons.account_balance_wallet, AppTheme.primaryColor),
-          const SizedBox(height: 12),
-          _buildFinanceCard('Valor de Plantilla', '\$${NumberFormatUtils.money(totalValue)}', Icons.trending_up, AppTheme.successColor),
-          if (team.finances != null) ...[
-            const SizedBox(height: 12),
-            _buildFinanceCard('Salarios Totales', '\$${NumberFormatUtils.money(team.finances!.totalSalaries)}', Icons.payment, Colors.orange),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsTab() {
-    if (team.stats == null) {
-      return const Center(child: Text('No hay estadísticas disponibles'));
-    }
-
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Estadísticas Generales', style: AppTheme.titleStyle),
-          const SizedBox(height: 12),
-          _buildStatsCard('Posición', '${team.stats!.position ?? '-'}'),
-          _buildStatsCard('Puntos', '${team.stats!.points}'),
-          _buildStatsCard('Partidos Jugados', '${team.stats!.matchesPlayed}'),
-          _buildStatsCard('Ganados', '${team.stats!.wins}'),
-          _buildStatsCard('Empatados', '${team.stats!.draws}'),
-          _buildStatsCard('Perdidos', '${team.stats!.losses}'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFinanceCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(title, style: AppTheme.subtitleStyle),
-          ),
-          Text(value, style: AppTheme.titleStyle.copyWith(color: color)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsCard(String label, String value) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: AppTheme.subtitleStyle)),
-          Text(value, style: AppTheme.titleStyle),
-        ],
-      ),
-    );
   }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // Color principal azul moderno con letras blancas
-  static const Color primaryColor = Color(0xFF1976D2); // Azul moderno
+  static const Color primaryColor = Color(0xFF011EA0); // Azul marca solicitado
   static const Color secondaryColor = Color(0xFF42A5F5); // Azul claro 
   static const Color accentColor = Color(0xFFFFD700); // Dorado
   static const Color backgroundColor = Color(0xFFF5F5F5);
@@ -10,8 +10,8 @@ class AppTheme {
   static const Color errorColor = Color(0xFFD32F2F);
   
   // URLs de imágenes remotas (fallback)
-  static const String backgroundImageUrl = 'https://mrrichar.netlify.app/fondo-default.png';
-  static const String logoImageUrl = 'https://mrrichar.netlify.app/logo.png';
+  static const String backgroundImageUrl = 'https://mrrichar.netlify.app/fondo-default1.png';
+  static const String logoImageUrl = 'https://mrrichar.netlify.app/Logo%20Liga%20Master_.png';
 
   static ThemeData lightTheme = ThemeData(
     primarySwatch: Colors.blue,
@@ -30,7 +30,9 @@ class AppTheme {
       backgroundColor: primaryColor,
       foregroundColor: Colors.white, // Letras blancas en AppBar
       centerTitle: true,
-      elevation: 2,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.transparent,
       titleTextStyle: TextStyle(
         color: Colors.white,
         fontSize: 20,
@@ -115,15 +117,7 @@ class AppTheme {
       image: DecorationImage(
         image: NetworkImage(backgroundImageUrl),
         fit: BoxFit.cover,
-        opacity: 0.1,
-      ),
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFF5F5F5),
-          Color(0xFFE3F2FD),
-        ],
+        opacity: 1.0,
       ),
     );
   }
@@ -134,7 +128,7 @@ class AppTheme {
       image: DecorationImage(
         image: NetworkImage(backgroundImageUrl),
         fit: BoxFit.cover,
-        opacity: 0.3,
+        opacity: 1.0,
       ),
     );
   }

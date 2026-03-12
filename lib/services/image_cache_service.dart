@@ -10,8 +10,8 @@ class ImageCacheService {
   ImageCacheService._internal();
 
   // URLs de las imágenes a descargar
-  static const String logoUrl = 'https://mrrichar.netlify.app/logo.png';
-  static const String backgroundUrl = 'https://mrrichar.netlify.app/fondo-default.png';
+  static const String logoUrl = 'https://mrrichar.netlify.app/Logo%20Liga%20Master_.png';
+  static const String backgroundUrl = 'https://mrrichar.netlify.app/fondo-default1.png';
   
   // Nombres de archivos locales
   static const String logoFileName = 'app_logo.png';

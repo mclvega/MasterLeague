@@ -42,6 +42,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
 
   final List<Map<String, dynamic>> _sortOptions = [
     {'label': 'Nombre', 'value': 'name'},
+    {'label': 'Posicion', 'value': 'position'},
     {'label': 'Precio', 'value': 'price'},
     {'label': 'Media', 'value': 'overall'},
     {'label': 'Edad', 'value': 'age'},
@@ -71,6 +72,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Consumer2<PlayerProvider, TeamProvider>(
         builder: (context, playerProvider, teamProvider, child) {
           return Column(
@@ -109,10 +111,22 @@ class _PlayersScreenState extends State<PlayersScreen> {
         children: [
           TextField(
             controller: _searchController,
-            decoration: const InputDecoration(
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
               hintText: 'Buscar jugadores...',
-              prefixIcon: Icon(Icons.search),
-              suffixIcon: Icon(Icons.filter_list),
+              hintStyle: const TextStyle(color: Colors.white70),
+              prefixIcon: const Icon(Icons.search, color: Colors.white),
+              suffixIcon: const Icon(Icons.filter_list, color: Colors.white),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.12),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.white70),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.white, width: 2),
+              ),
             ),
             onChanged: (value) {
               playerProvider.searchPlayers(value);
@@ -123,6 +137,10 @@ class _PlayersScreenState extends State<PlayersScreen> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white),
+                  ),
                   onPressed: () => _openFiltersModal(playerProvider, teamProvider, countries),
                   icon: const Icon(Icons.tune),
                   label: Text(
@@ -133,6 +151,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
               const SizedBox(width: 8),
               IconButton(
                 tooltip: 'Limpiar filtros',
+                color: Colors.white,
                 onPressed: () {
                   setState(() {
                     _selectedPosition = null;
@@ -153,19 +172,6 @@ class _PlayersScreenState extends State<PlayersScreen> {
               ),
             ],
           ),
-          if (activeFilters.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: activeFilters
-                    .map((f) => Chip(label: Text(f, style: const TextStyle(fontSize: 12))))
-                    .toList(),
-              ),
-            ),
-          ],
         ],
       ),
     );
