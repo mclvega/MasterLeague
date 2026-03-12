@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/player.dart';
 import '../providers/team_provider.dart';
 import '../utils/number_format_utils.dart';
+import '../utils/position_utils.dart';
 import '../utils/theme.dart';
 
 class PlayerCard extends StatelessWidget {
@@ -63,7 +64,7 @@ class PlayerCard extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            'OVR ${player.overall}',
+                            'Media ${player.overall}',
                             style: AppTheme.captionStyle,
                           ),
                         ],
@@ -136,7 +137,7 @@ class PlayerCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        player.position,
+        PositionUtils.normalize(player.position),
         style: const TextStyle(
           color: Colors.black,
           fontSize: 12,
@@ -147,105 +148,100 @@ class PlayerCard extends StatelessWidget {
   }
 
   void _showPlayerDetails(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => PlayerDetailsDialog(player: player),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => PlayerDetailsScreen(player: player),
+      ),
     );
   }
 }
 
-class PlayerDetailsDialog extends StatelessWidget {
+class PlayerDetailsScreen extends StatelessWidget {
   final Player player;
 
-  const PlayerDetailsDialog({
+  const PlayerDetailsScreen({
     super.key,
     required this.player,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Detalle del Jugador'),
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
       ),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppTheme.getPositionColor(player.position),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    player.position,
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppTheme.getPositionColor(player.position),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  PositionUtils.normalize(player.position),
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              player.name,
-              style: AppTheme.headlineStyle,
-            ),
-            const SizedBox(height: 16),
-            _buildDetailRow('Club', player.club),
-            _buildDetailRow('Nacionalidad', player.nationality),
-            _buildDetailRow('Edad', '${player.age} años'),
-            _buildDetailRow('Overall', player.overall.toString()),
-            _buildDetailRow('Precio', '\$${NumberFormatUtils.money(player.price)}'),
-            const SizedBox(height: 20),
-            Consumer<TeamProvider>(
-              builder: (context, teamProvider, child) {
-                final team = player.teamId != null 
-                    ? teamProvider.getTeamById(player.teamId!)
-                    : null;
-                
-                if (team != null) {
-                  return Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.primaryColor),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Equipo Actual',
-                          style: AppTheme.titleStyle.copyWith(
-                            color: AppTheme.primaryColor,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                player.name,
+                style: AppTheme.headlineStyle,
+              ),
+              const SizedBox(height: 16),
+              _buildDetailRow('Club', player.club),
+              _buildDetailRow('Nacionalidad', player.nationality),
+              _buildDetailRow('Edad', '${player.age} años'),
+              _buildDetailRow('Media', player.overall.toString()),
+              _buildDetailRow('Precio', '\$${NumberFormatUtils.money(player.price)}'),
+              const SizedBox(height: 20),
+              Consumer<TeamProvider>(
+                builder: (context, teamProvider, child) {
+                  final team = player.teamId != null
+                      ? teamProvider.getTeamById(player.teamId!)
+                      : null;
+
+                  if (team != null) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.primaryColor),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Equipo Actual',
+                            style: AppTheme.titleStyle.copyWith(
+                              color: AppTheme.primaryColor,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          team.name,
-                          style: AppTheme.bodyStyle,
-                        ),
-                        Text(
-                          'Propietario: ${team.ownerName}',
-                          style: AppTheme.captionStyle,
-                        ),
-                      ],
-                    ),
-                  );
-                } else {
+                          const SizedBox(height: 4),
+                          Text(
+                            team.name,
+                            style: AppTheme.bodyStyle,
+                          ),
+                          Text(
+                            'Propietario: ${team.ownerName}',
+                            style: AppTheme.captionStyle,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
                   return Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
@@ -270,10 +266,10 @@ class PlayerDetailsDialog extends StatelessWidget {
                       ],
                     ),
                   );
-                }
-              },
-            ),
-          ],
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -281,23 +277,29 @@ class PlayerDetailsDialog extends StatelessWidget {
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
               '$label:',
               style: AppTheme.subtitleStyle,
             ),
-          ),
-          Expanded(
-            child: Text(
+            const SizedBox(height: 4),
+            Text(
               value,
               style: AppTheme.bodyStyle,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

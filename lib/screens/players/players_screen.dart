@@ -17,22 +17,25 @@ class _PlayersScreenState extends State<PlayersScreen> {
   final TextEditingController _searchController = TextEditingController();
   String? _selectedPosition;
   String? _selectedTeamId;
+  String? _selectedCountry;
+  double? _selectedMinPrice;
+  double? _selectedMaxPrice;
   String _sortBy = 'name';
   bool _sortAscending = true;
 
   final List<String> _positions = [
     'Todas',
     'PT',
-    'CT',
+    'DEC',
     'LI',
     'LD',
     'MCD',
     'MC',
-    'II',
-    'ID',
-    'MP',
-    'EI',
-    'ED',
+    'MDI',
+    'MDD',
+    'MO',
+    'EXI',
+    'EXD',
     'SD',
     'DC',
   ];
@@ -40,7 +43,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
   final List<Map<String, dynamic>> _sortOptions = [
     {'label': 'Nombre', 'value': 'name'},
     {'label': 'Precio', 'value': 'price'},
-    {'label': 'Overall', 'value': 'overall'},
+    {'label': 'Media', 'value': 'overall'},
     {'label': 'Edad', 'value': 'age'},
   ];
 
@@ -84,6 +87,22 @@ class _PlayersScreenState extends State<PlayersScreen> {
   }
 
   Widget _buildSearchAndFilters(PlayerProvider playerProvider, TeamProvider teamProvider) {
+    final countries = playerProvider.players
+        .map((p) => p.nationality.trim())
+        .where((n) => n.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+
+    final activeFilters = [
+      if (_selectedPosition != null) 'Posición: $_selectedPosition',
+      if (_selectedTeamId != null)
+        'Equipo: ${teamProvider.getTeamById(_selectedTeamId!)?.name ?? _selectedTeamId}',
+      if (_selectedCountry != null) 'País: $_selectedCountry',
+      if (_selectedMinPrice != null) 'Min: ${_selectedMinPrice!.toStringAsFixed(0)}',
+      if (_selectedMaxPrice != null) 'Max: ${_selectedMaxPrice!.toStringAsFixed(0)}',
+    ];
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -103,117 +122,234 @@ class _PlayersScreenState extends State<PlayersScreen> {
           Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: _selectedPosition ?? 'Todas',
-                  decoration: const InputDecoration(
-                    labelText: 'Posición',
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: OutlinedButton.icon(
+                  onPressed: () => _openFiltersModal(playerProvider, teamProvider, countries),
+                  icon: const Icon(Icons.tune),
+                  label: Text(
+                    activeFilters.isEmpty ? 'Filtros' : 'Filtros (${activeFilters.length})',
                   ),
-                  items: _positions.map((position) {
-                    return DropdownMenuItem<String>(
-                      value: position,
-                      child: Text(position),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedPosition = value == 'Todas' ? null : value;
-                    });
-                    playerProvider.filterByPosition(_selectedPosition);
-                  },
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: _sortBy,
-                  decoration: const InputDecoration(
-                    labelText: 'Ordenar por',
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                  ...teamProvider.teams.map((team) {
-                    return DropdownMenuItem<String>(
-                      value: team.id,
-                      child: Text(team.name, overflow: TextOverflow.ellipsis),
-                    );
-                  }),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedTeamId = value == 'Todos' ? null : value;
-                  });
-                  playerProvider.filterByTeam(_selectedTeamId);
-                  playerProvider.sortPlayers(_sortBy, ascending: _sortAscending);
-                },
-              );
-
-              final sortFilter = DropdownButtonFormField<String>(
-                value: _sortBy,
-                decoration: const InputDecoration(
-                  labelText: 'Ordenar por',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                items: _sortOptions.map((option) {
-                  return DropdownMenuItem<String>(
-                    value: option['value'],
-                    child: Text(option['label']),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _sortBy = value;
-                    });
-                    playerProvider.sortPlayers(value, ascending: _sortAscending);
-                  }
-                },
-              );
-
-              final sortDirection = IconButton(
-                icon: Icon(
-                  _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                  color: AppTheme.primaryColor,
-                ),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Limpiar filtros',
                 onPressed: () {
                   setState(() {
-                    _sortAscending = !_sortAscending;
+                    _selectedPosition = null;
+                    _selectedTeamId = null;
+                    _selectedCountry = null;
+                    _selectedMinPrice = null;
+                    _selectedMaxPrice = null;
+                    _sortBy = 'name';
+                    _sortAscending = true;
                   });
+                  playerProvider.filterByPosition(null);
+                  playerProvider.filterByTeam(null);
+                  playerProvider.filterByCountry(null);
+                  playerProvider.filterByPriceRange(null, null);
                   playerProvider.sortPlayers(_sortBy, ascending: _sortAscending);
                 },
-              );
+                icon: const Icon(Icons.filter_alt_off),
+              ),
+            ],
+          ),
+          if (activeFilters.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: activeFilters
+                    .map((f) => Chip(label: Text(f, style: const TextStyle(fontSize: 12))))
+                    .toList(),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
-              if (isCompact) {
-                return Column(
+  Future<void> _openFiltersModal(
+    PlayerProvider playerProvider,
+    TeamProvider teamProvider,
+    List<String> countries,
+  ) async {
+    String tempSortBy = _sortBy;
+    bool tempSortAscending = _sortAscending;
+    String? tempPosition = _selectedPosition;
+    String? tempTeamId = _selectedTeamId;
+    String? tempCountry = _selectedCountry;
+    final minController = TextEditingController(
+      text: _selectedMinPrice != null ? _selectedMinPrice!.toStringAsFixed(0) : '',
+    );
+    final maxController = TextEditingController(
+      text: _selectedMaxPrice != null ? _selectedMaxPrice!.toStringAsFixed(0) : '',
+    );
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    positionFilter,
+                    Text('Filtros de jugadores', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: tempPosition ?? 'Todas',
+                      decoration: const InputDecoration(labelText: 'Posición'),
+                      items: _positions
+                          .map((position) => DropdownMenuItem(value: position, child: Text(position)))
+                          .toList(),
+                      onChanged: (value) {
+                        setModalState(() {
+                          tempPosition = value == 'Todas' ? null : value;
+                        });
+                      },
+                    ),
                     const SizedBox(height: 10),
-                    teamFilter,
+                    DropdownButtonFormField<String>(
+                      value: tempTeamId ?? 'Todos',
+                      decoration: const InputDecoration(labelText: 'Equipo'),
+                      items: [
+                        const DropdownMenuItem(value: 'Todos', child: Text('Todos')),
+                        ...teamProvider.teams
+                            .map((team) => DropdownMenuItem(value: team.id, child: Text(team.name))),
+                      ],
+                      onChanged: (value) {
+                        setModalState(() {
+                          tempTeamId = value == 'Todos' ? null : value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: tempCountry ?? 'Todos',
+                      decoration: const InputDecoration(labelText: 'País'),
+                      items: [
+                        const DropdownMenuItem(value: 'Todos', child: Text('Todos')),
+                        ...countries.map((country) => DropdownMenuItem(value: country, child: Text(country))),
+                      ],
+                      onChanged: (value) {
+                        setModalState(() {
+                          tempCountry = value == 'Todos' ? null : value;
+                        });
+                      },
+                    ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        Expanded(child: sortFilter),
-                        const SizedBox(width: 8),
-                        sortDirection,
+                        Expanded(
+                          child: TextField(
+                            controller: minController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Precio mínimo'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: maxController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Precio máximo'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: tempSortBy,
+                            decoration: const InputDecoration(labelText: 'Ordenar por'),
+                            items: _sortOptions
+                              .map((option) => DropdownMenuItem<String>(
+                                      value: option['value'],
+                                      child: Text(option['label']),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setModalState(() {
+                                  tempSortBy = value;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        IconButton(
+                          icon: Icon(tempSortAscending ? Icons.arrow_upward : Icons.arrow_downward),
+                          onPressed: () {
+                            setModalState(() {
+                              tempSortAscending = !tempSortAscending;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text('Cancelar'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final parsedMin = double.tryParse(minController.text.trim());
+                              final parsedMax = double.tryParse(maxController.text.trim());
+
+                              setState(() {
+                                _selectedPosition = tempPosition;
+                                _selectedTeamId = tempTeamId;
+                                _selectedCountry = tempCountry;
+                                _selectedMinPrice = parsedMin;
+                                _selectedMaxPrice = parsedMax;
+                                _sortBy = tempSortBy;
+                                _sortAscending = tempSortAscending;
+                              });
+
+                              playerProvider.filterByPosition(_selectedPosition);
+                              playerProvider.filterByTeam(_selectedTeamId);
+                              playerProvider.filterByCountry(_selectedCountry);
+                              playerProvider.filterByPriceRange(_selectedMinPrice, _selectedMaxPrice);
+                              playerProvider.sortPlayers(_sortBy, ascending: _sortAscending);
+
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text('Aplicar'),
+                          ),
+                        ),
                       ],
                     ),
                   ],
-                );
-              }
-
-              return Row(
-                children: [
-                  Expanded(child: positionFilter),
-                  const SizedBox(width: 12),
-                  Expanded(child: teamFilter),
-                  const SizedBox(width: 12),
-                  Expanded(child: sortFilter),
-                  sortDirection,
-                ],
-              );
-            },
-          ),
-        ],
-      ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

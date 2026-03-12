@@ -4,8 +4,12 @@ import '../providers/player_provider.dart';
 import '../providers/team_provider.dart';
 import '../providers/competition_provider.dart';
 import '../providers/settings_provider.dart';
+import '../models/competition.dart';
+import '../models/team.dart';
 import '../utils/theme.dart';
 import '../utils/number_format_utils.dart';
+import '../utils/position_utils.dart';
+import 'package:intl/intl.dart';
 import 'players/players_screen.dart';
 import 'teams/teams_screen.dart';
 import 'competitions/competitions_screen.dart';
@@ -21,14 +25,15 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  int _eventsInitialTab = 0;
 
-  final List<Widget> _screens = [
-    const DashboardTab(),
-    const PlayersScreen(),
-    const TeamsScreen(),
-    const CompetitionsScreen(),
-    const FreeAgentsScreen(),
-  ];
+  List<Widget> get _screens => [
+        const DashboardTab(),
+        const PlayersScreen(),
+        const TeamsScreen(),
+        CompetitionsScreen(initialTabIndex: _eventsInitialTab),
+        const FreeAgentsScreen(),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +83,12 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
+        onTap: (index) => setState(() {
+          _selectedIndex = index;
+          if (index == 3) {
+            _eventsInitialTab = 0;
+          }
+        }),
         selectedItemColor: AppTheme.primaryColor, // Color azul para seleccionado
         unselectedItemColor: Colors.grey,
         backgroundColor: Colors.white,
@@ -101,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.emoji_events),
-            label: 'Competiciones',
+            label: 'Eventos',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_add_disabled),
@@ -261,7 +271,7 @@ class _DashboardTabState extends State<DashboardTab>
           ),
           const SizedBox(height: 12),
           Text(
-            '⚽ Importando jugadores, equipos y competiciones',
+            '⚽ Importando jugadores, equipos y eventos',
             style: AppTheme.bodyStyle.copyWith(
               color: Colors.grey[600],
             ),
@@ -349,13 +359,13 @@ class _DashboardTabState extends State<DashboardTab>
     CompetitionProvider competitionProvider,
     SettingsProvider settingsProvider,
   ) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Dashboard',
+            'Inicio',
             style: AppTheme.headlineStyle,
             textAlign: TextAlign.center,
           ),
@@ -363,7 +373,7 @@ class _DashboardTabState extends State<DashboardTab>
 
           // Tarjeta del equipo por defecto o mensaje de guía
           if (settingsProvider.hasDefaultTeam) ...[
-            _buildDefaultTeamDetails(settingsProvider, teamProvider, playerProvider),
+            _buildDefaultTeamDetails(context, settingsProvider, teamProvider, playerProvider),
             const SizedBox(height: 20),
           ] else ...[
             Card(
@@ -395,13 +405,124 @@ class _DashboardTabState extends State<DashboardTab>
               ),
             ),
             const SizedBox(height: 20),
-          ], 
+          ],
+
+          _buildEventsSummary(context, competitionProvider),
         ],
       ),
     );
   }
 
+  Widget _buildEventsSummary(
+    BuildContext context,
+    CompetitionProvider competitionProvider,
+  ) {
+    final activeEvents = competitionProvider.ongoingCompetitions;
+    final upcomingEvents = competitionProvider.upcomingCompetitions;
+
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _navigateToEventsTab(context, 0),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Eventos',
+                style: AppTheme.titleStyle,
+              ),
+              const SizedBox(height: 12),
+              _buildEventPreviewList(
+                context: context,
+                title: 'Activos ahora',
+                events: activeEvents,
+                color: AppTheme.successColor,
+                emptyText: 'No hay eventos activos en este momento.',
+                targetTabIndex: 1,
+              ),
+              const SizedBox(height: 10),
+              _buildEventPreviewList(
+                context: context,
+                title: 'Próximos eventos',
+                events: upcomingEvents,
+                color: AppTheme.infoColor,
+                emptyText: 'No hay eventos próximos.',
+                targetTabIndex: 2,
+              ), 
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEventPreviewList({
+    required BuildContext context,
+    required String title,
+    required List<Competition> events,
+    required Color color,
+    required String emptyText,
+    required int targetTabIndex,
+  }) {
+    final visibleItems = events.take(3).toList();
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () => _navigateToEventsTab(context, targetTabIndex),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: AppTheme.subtitleStyle.copyWith(color: color),
+            ),
+            const SizedBox(height: 6),
+            if (visibleItems.isEmpty)
+              Text(
+                emptyText,
+                style: AppTheme.captionStyle,
+              )
+            else
+              ...visibleItems.map(
+                (event) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Row(
+                    children: [
+                      Icon(Icons.circle, size: 8, color: color),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          event.name,
+                          style: AppTheme.bodyStyle,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        DateFormat('dd/MM/yyyy').format(event.startDate),
+                        style: AppTheme.captionStyle,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDefaultTeamDetails(
+    BuildContext context,
     SettingsProvider settingsProvider,
     TeamProvider teamProvider,
     PlayerProvider playerProvider,
@@ -435,74 +556,84 @@ class _DashboardTabState extends State<DashboardTab>
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: SizedBox(
-                    width: 56,
-                    height: 56,
-                    child: (defaultTeam.logoUrl != null && defaultTeam.logoUrl!.isNotEmpty)
-                        ? Image.network(
-                            defaultTeam.logoUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => AppTheme.buildAppLogo(width: 56, height: 56),
-                          )
-                        : AppTheme.buildAppLogo(width: 56, height: 56),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        defaultTeam.name,
-                        style: AppTheme.titleStyle.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'DT: ${defaultTeam.ownerName}',
-                        style: AppTheme.bodyStyle.copyWith(color: Colors.grey[700]),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.star, color: Colors.amber),
-              ],
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => DashboardTeamDetailsScreen(team: defaultTeam),
             ),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildMiniStat('Jugadores', teamPlayers.length.toString(), Icons.people),
-                _buildMiniStat('Media', avgOverall.toStringAsFixed(1), Icons.trending_up),
-                _buildMiniStat('Valor', '\$${NumberFormatUtils.money(totalValue)}', Icons.attach_money),
-                _buildMiniStat('Presupuesto', '\$${NumberFormatUtils.money(defaultTeam.budget)}', Icons.account_balance_wallet),
-              ],
-            ),
-            if (defaultTeam.stats != null) ...[
-              const SizedBox(height: 14),
-              Text('Estadísticas competitivas', style: AppTheme.subtitleStyle),
-              const SizedBox(height: 8),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildSmallMetric('PTS', defaultTeam.stats!.points.toString()),
-                  _buildSmallMetric('PJ', defaultTeam.stats!.matchesPlayed.toString()),
-                  _buildSmallMetric('G', defaultTeam.stats!.wins.toString()),
-                  _buildSmallMetric('E', defaultTeam.stats!.draws.toString()),
-                  _buildSmallMetric('P', defaultTeam.stats!.losses.toString()),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(
+                      width: 56,
+                      height: 56,
+                      child: (defaultTeam.logoUrl != null && defaultTeam.logoUrl!.isNotEmpty)
+                          ? Image.network(
+                              defaultTeam.logoUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => AppTheme.buildAppLogo(width: 56, height: 56),
+                            )
+                          : AppTheme.buildAppLogo(width: 56, height: 56),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          defaultTeam.name,
+                          style: AppTheme.titleStyle.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'DT: ${defaultTeam.ownerName}',
+                          style: AppTheme.bodyStyle.copyWith(color: Colors.grey[700]),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios, color: Colors.amber, size: 18),
                 ],
               ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildMiniStat('Jugadores', teamPlayers.length.toString(), Icons.people),
+                  _buildMiniStat('Media Plantilla', avgOverall.toStringAsFixed(1), Icons.trending_up),
+                  _buildMiniStat('Valor Plantilla', '\$${NumberFormatUtils.money(totalValue)}', Icons.attach_money),
+                  _buildMiniStat('Presupuesto', '\$${NumberFormatUtils.money(defaultTeam.budget)}', Icons.account_balance_wallet),
+                ],
+              ),
+              if (defaultTeam.stats != null) ...[
+                const SizedBox(height: 14),
+                Text('Estadísticas competitivas', style: AppTheme.subtitleStyle),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildSmallMetric('PTS', defaultTeam.stats!.points.toString()),
+                    _buildSmallMetric('PJ', defaultTeam.stats!.matchesPlayed.toString()),
+                    _buildSmallMetric('G', defaultTeam.stats!.wins.toString()),
+                    _buildSmallMetric('E', defaultTeam.stats!.draws.toString()),
+                    _buildSmallMetric('P', defaultTeam.stats!.losses.toString()),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -561,7 +692,7 @@ class _DashboardTabState extends State<DashboardTab>
             if (competitionProvider.ongoingCompetitions.isNotEmpty) ...[
               ListTile(
                 leading: const Icon(Icons.sports_soccer, color: AppTheme.successColor),
-                title: Text('${competitionProvider.ongoingCompetitions.length} competiciones activas'),
+                title: Text('${competitionProvider.ongoingCompetitions.length} eventos activos'),
                 trailing: const Icon(Icons.arrow_forward_ios),
                 onTap: () => _navigateToTab(context, 3),
               ),
@@ -596,5 +727,229 @@ class _DashboardTabState extends State<DashboardTab>
         homeState._selectedIndex = tabIndex;
       });
     }
+  }
+
+  void _navigateToEventsTab(BuildContext context, int eventsTabIndex) {
+    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+    if (homeState != null) {
+      homeState.setState(() {
+        homeState._eventsInitialTab = eventsTabIndex;
+        homeState._selectedIndex = 3;
+      });
+    }
+  }
+}
+
+class DashboardTeamDetailsScreen extends StatelessWidget {
+  final Team team;
+
+  const DashboardTeamDetailsScreen({
+    super.key,
+    required this.team,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final playerProvider = context.watch<PlayerProvider>();
+    final teamPlayers = playerProvider.getPlayersByTeam(team.id);
+
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(team.name),
+          backgroundColor: AppTheme.primaryColor,
+          foregroundColor: Colors.white,
+          bottom: const TabBar(
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            indicatorColor: Colors.white,
+            tabs: [
+              Tab(text: 'Plantilla'),
+              Tab(text: 'Finanzas'),
+              Tab(text: 'Estadísticas'),
+            ],
+          ),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: AppTheme.primaryColor,
+                    radius: 24,
+                    child: Text(
+                      team.name.substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(team.name, style: AppTheme.headlineStyle),
+                        Text(team.ownerName, style: AppTheme.subtitleStyle),
+                        if (team.homeStadium != null)
+                          Text('🏟️ ${team.homeStadium}', style: AppTheme.captionStyle),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _buildSquadTab(teamPlayers),
+                    _buildFinancesTab(teamPlayers),
+                    _buildStatsTab(),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSquadTab(List<dynamic> teamPlayers) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Plantilla (${teamPlayers.length} jugadores)',
+          style: AppTheme.titleStyle,
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: teamPlayers.isEmpty
+              ? const Center(child: Text('No hay jugadores en este equipo'))
+              : ListView.builder(
+                  itemCount: teamPlayers.length,
+                  itemBuilder: (context, index) {
+                    final player = teamPlayers[index];
+                    return ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppTheme.getPositionColor(player.position),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          PositionUtils.normalize(player.position),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      title: Text(player.name),
+                      subtitle: Text('${player.club} • Media ${player.overall}'),
+                      trailing: Text(
+                        '\$${NumberFormatUtils.money(player.price)}',
+                        style: const TextStyle(
+                          color: AppTheme.successColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFinancesTab(List<dynamic> teamPlayers) {
+    final totalValue = team.teamValue ?? teamPlayers.fold<double>(0, (sum, player) => sum + player.price);
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Información Financiera', style: AppTheme.titleStyle),
+          const SizedBox(height: 16),
+          _buildFinanceCard('Presupuesto', '\$${NumberFormatUtils.money(team.finances?.budgetRemaining ?? team.budget)}', Icons.account_balance_wallet, AppTheme.primaryColor),
+          const SizedBox(height: 12),
+          _buildFinanceCard('Valor de Plantilla', '\$${NumberFormatUtils.money(totalValue)}', Icons.trending_up, AppTheme.successColor),
+          if (team.finances != null) ...[
+            const SizedBox(height: 12),
+            _buildFinanceCard('Salarios Totales', '\$${NumberFormatUtils.money(team.finances!.totalSalaries)}', Icons.payment, Colors.orange),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsTab() {
+    if (team.stats == null) {
+      return const Center(child: Text('No hay estadísticas disponibles'));
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Estadísticas Generales', style: AppTheme.titleStyle),
+          const SizedBox(height: 12),
+          _buildStatsCard('Posición', '${team.stats!.position ?? '-'}'),
+          _buildStatsCard('Puntos', '${team.stats!.points}'),
+          _buildStatsCard('Partidos Jugados', '${team.stats!.matchesPlayed}'),
+          _buildStatsCard('Ganados', '${team.stats!.wins}'),
+          _buildStatsCard('Empatados', '${team.stats!.draws}'),
+          _buildStatsCard('Perdidos', '${team.stats!.losses}'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFinanceCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(title, style: AppTheme.subtitleStyle),
+          ),
+          Text(value, style: AppTheme.titleStyle.copyWith(color: color)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsCard(String label, String value) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: AppTheme.subtitleStyle)),
+          Text(value, style: AppTheme.titleStyle),
+        ],
+      ),
+    );
   }
 }

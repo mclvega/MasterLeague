@@ -7,7 +7,12 @@ import '../../utils/theme.dart';
 import 'package:intl/intl.dart';
 
 class CompetitionsScreen extends StatelessWidget {
-  const CompetitionsScreen({super.key});
+  final int initialTabIndex;
+
+  const CompetitionsScreen({
+    super.key,
+    this.initialTabIndex = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,8 +30,8 @@ class CompetitionsScreen extends StatelessWidget {
                     size: 28,
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Competiciones',
+                  Text(
+                    'Eventos',
                     style: AppTheme.headlineStyle,
                   ),
                   const Spacer(),
@@ -56,8 +61,13 @@ class CompetitionsScreen extends StatelessWidget {
   }
 
   Widget _buildCompetitionTabs(CompetitionProvider competitionProvider) {
+    final safeInitialTabIndex = initialTabIndex < 0
+        ? 0
+        : (initialTabIndex > 3 ? 3 : initialTabIndex);
+
     return Expanded(
       child: DefaultTabController(
+        initialIndex: safeInitialTabIndex,
         length: 4,
         child: Column(
           children: [
@@ -101,7 +111,7 @@ class CompetitionsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No hay competiciones',
+              'No hay eventos',
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.grey[600],
@@ -109,7 +119,7 @@ class CompetitionsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Las competiciones aparecerán aquí',
+              'Los eventos aparecerán aquí',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[500],
@@ -220,7 +230,7 @@ class CompetitionCard extends StatelessWidget {
         break;
       case CompetitionType.tournament:
         color = AppTheme.secondaryColor;
-        label = 'Torneo';
+        label = 'Evento';
         break;
     }
 
@@ -291,82 +301,81 @@ class CompetitionCard extends StatelessWidget {
   }
 
   void _showCompetitionDetails(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => CompetitionDetailsDialog(competition: competition),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CompetitionDetailsScreen(competition: competition),
+      ),
     );
   }
 }
 
-class CompetitionDetailsDialog extends StatelessWidget {
+class CompetitionDetailsScreen extends StatelessWidget {
   final Competition competition;
 
-  const CompetitionDetailsDialog({
+  const CompetitionDetailsScreen({
     super.key,
     required this.competition,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Detalle del Evento'),
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
       ),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        constraints: const BoxConstraints(maxHeight: 500),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.emoji_events,
-                  color: AppTheme.accentColor,
-                  size: 32,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    competition.name,
-                    style: AppTheme.headlineStyle,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.emoji_events,
+                    color: AppTheme.accentColor,
+                    size: 32,
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      competition.name,
+                      style: AppTheme.headlineStyle,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (competition.description != null) ...[
+                Text(
+                  competition.description!,
+                  style: AppTheme.bodyStyle,
                 ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close),
+                const SizedBox(height: 16),
+              ],
+              _buildDetailRow('Tipo de evento', _getTypeLabel()),
+              _buildDetailRow('Estado', _getStatusLabel()),
+              _buildDetailRow('Fecha de inicio', DateFormat('dd/MM/yyyy').format(competition.startDate)),
+              if (competition.endDate != null)
+                _buildDetailRow('Fecha de fin', DateFormat('dd/MM/yyyy').format(competition.endDate!)),
+              _buildDetailRow('Premio', '\$${NumberFormatUtils.money(competition.prizePool)}'),
+              _buildDetailRow('Participantes', '${competition.participantCount} equipos'),
+              if (competition.rules != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Reglas',
+                  style: AppTheme.titleStyle,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  competition.rules.toString(),
+                  style: AppTheme.captionStyle,
                 ),
               ],
-            ),
-            const SizedBox(height: 16),
-            if (competition.description != null) ...[
-              Text(
-                competition.description!,
-                style: AppTheme.bodyStyle,
-              ),
-              const SizedBox(height: 16),
             ],
-            _buildDetailRow('Tipo', _getTypeLabel()),
-            _buildDetailRow('Estado', _getStatusLabel()),
-            _buildDetailRow('Fecha de inicio', DateFormat('dd/MM/yyyy').format(competition.startDate)),
-            if (competition.endDate != null)
-              _buildDetailRow('Fecha de fin', DateFormat('dd/MM/yyyy').format(competition.endDate!)),
-            _buildDetailRow('Premio', '\$${NumberFormatUtils.money(competition.prizePool)}'),
-            _buildDetailRow('Participantes', '${competition.participantCount} equipos'),
-            if (competition.rules != null) ...[
-              const SizedBox(height: 16),
-              const Text(
-                'Reglas',
-                style: AppTheme.titleStyle,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                competition.rules.toString(),
-                style: AppTheme.captionStyle,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -402,7 +411,7 @@ class CompetitionDetailsDialog extends StatelessWidget {
       case CompetitionType.cup:
         return 'Copa';
       case CompetitionType.tournament:
-        return 'Torneo';
+        return 'Evento';
     }
   }
 

@@ -157,10 +157,10 @@ class CompetitionProvider with ChangeNotifier {
       _competitions.addAll(importedCompetitions);
 
       if (_competitions.isEmpty) {
-        setError('No se encontraron competiciones en los datos');
+        setError('No se encontraron eventos en los datos');
       }
     } catch (e) {
-      setError('Error cargando competiciones: $e');
+      setError('Error cargando eventos: $e');
     } finally {
       setLoading(false);
       notifyListeners();

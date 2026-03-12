@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/player.dart';
 import '../services/file_import_service_simple.dart';
+import '../utils/position_utils.dart';
 
 class PlayerProvider with ChangeNotifier {
   final List<Player> _players = [];
@@ -10,6 +11,9 @@ class PlayerProvider with ChangeNotifier {
   String _searchQuery = '';
   String? _positionFilter;
   String? _teamFilter;
+  String? _countryFilter;
+  double? _minPriceFilter;
+  double? _maxPriceFilter;
 
   List<Player> get players => _players;
   List<Player> get filteredPlayers => _filteredPlayers;
@@ -72,13 +76,28 @@ class PlayerProvider with ChangeNotifier {
   }
 
   void filterByPosition(String? position) {
-    _positionFilter = (position == null || position.isEmpty) ? null : position.toLowerCase();
+    _positionFilter = (position == null || position.isEmpty)
+        ? null
+        : PositionUtils.normalize(position).toLowerCase();
     _applyFilters();
     notifyListeners();
   }
 
   void filterByTeam(String? teamId) {
     _teamFilter = (teamId == null || teamId.isEmpty) ? null : teamId;
+    _applyFilters();
+    notifyListeners();
+  }
+
+  void filterByCountry(String? country) {
+    _countryFilter = (country == null || country.isEmpty) ? null : country.toLowerCase();
+    _applyFilters();
+    notifyListeners();
+  }
+
+  void filterByPriceRange(double? minPrice, double? maxPrice) {
+    _minPriceFilter = minPrice;
+    _maxPriceFilter = maxPrice;
     _applyFilters();
     notifyListeners();
   }
@@ -92,12 +111,23 @@ class PlayerProvider with ChangeNotifier {
           player.nationality.toLowerCase().contains(_searchQuery);
 
       final matchesPosition = _positionFilter == null ||
-          player.position.toLowerCase() == _positionFilter;
+          PositionUtils.normalize(player.position).toLowerCase() == _positionFilter;
 
       final matchesTeam = _teamFilter == null ||
           ((player.teamId ?? '') == _teamFilter);
 
-      return matchesSearch && matchesPosition && matchesTeam;
+        final matchesCountry = _countryFilter == null ||
+          player.nationality.toLowerCase() == _countryFilter;
+
+        final matchesMinPrice = _minPriceFilter == null || player.price >= _minPriceFilter!;
+        final matchesMaxPrice = _maxPriceFilter == null || player.price <= _maxPriceFilter!;
+
+        return matchesSearch &&
+          matchesPosition &&
+          matchesTeam &&
+          matchesCountry &&
+          matchesMinPrice &&
+          matchesMaxPrice;
     }).toList();
   }
 
@@ -156,6 +186,9 @@ class PlayerProvider with ChangeNotifier {
         _searchQuery = '';
         _positionFilter = null;
         _teamFilter = null;
+        _countryFilter = null;
+        _minPriceFilter = null;
+        _maxPriceFilter = null;
         _filteredPlayers = List.from(_players);
         
         print('✅ Carga exitosa: ${importedPlayers.length} jugadores');
@@ -225,6 +258,9 @@ class PlayerProvider with ChangeNotifier {
     _searchQuery = '';
     _positionFilter = null;
     _teamFilter = null;
+    _countryFilter = null;
+    _minPriceFilter = null;
+    _maxPriceFilter = null;
     _filteredPlayers = List.from(_players);
     
     print('Datos de emergencia cargados: ${_players.length} jugadores');

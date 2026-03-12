@@ -4,6 +4,7 @@ import '../../providers/team_provider.dart';
 import '../../providers/player_provider.dart';
 import '../../models/team.dart';
 import '../../utils/number_format_utils.dart';
+import '../../utils/position_utils.dart';
 import '../../utils/theme.dart';
 
 class TeamsScreen extends StatelessWidget {
@@ -229,13 +230,6 @@ class TeamCard extends StatelessWidget {
                     AppTheme.primaryColor,
                   ),
                   const SizedBox(width: 8),
-                  if (team.formation != null)
-                    _buildInfoChip(
-                      Icons.grid_3x3,
-                      team.formation!,
-                      AppTheme.secondaryColor,
-                    ),
-                  const SizedBox(width: 8),
                   if (team.trophies != null && team.trophies!.isNotEmpty)
                     _buildInfoChip(
                       Icons.emoji_events,
@@ -355,94 +349,72 @@ class TeamCard extends StatelessWidget {
 
   void _showTeamDetails(BuildContext context) {
     final teamPlayers = playerProvider.getPlayersByTeam(team.id);
-    
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          constraints: const BoxConstraints(maxHeight: 700, maxWidth: 500),
-          child: DefaultTabController(
-            length: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header del equipo
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: AppTheme.primaryColor,
-                      radius: 24,
-                      child: Text(
-                        team.name.substring(0, 1).toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DefaultTabController(
+          length: 3,
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text(team.name),
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              bottom: const TabBar(
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+                indicatorColor: Colors.white,
+                tabs: [
+                  Tab(text: 'Plantilla'),
+                  Tab(text: 'Finanzas'),
+                  Tab(text: 'Estadísticas'),
+                ],
+              ),
+            ),
+            body: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: AppTheme.primaryColor,
+                        radius: 24,
+                        child: Text(
+                          team.name.substring(0, 1).toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            team.name,
-                            style: AppTheme.headlineStyle,
-                          ),
-                          Text(
-                            team.ownerName,
-                            style: AppTheme.subtitleStyle,
-                          ),
-                          if (team.homeStadium != null)
-                            Text(
-                              '🏟️ ${team.homeStadium}',
-                              style: AppTheme.captionStyle,
-                            ),
-                        ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(team.name, style: AppTheme.headlineStyle),
+                            Text(team.ownerName, style: AppTheme.subtitleStyle),
+                            if (team.homeStadium != null)
+                              Text('🏟️ ${team.homeStadium}', style: AppTheme.captionStyle),
+                          ],
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Tabs
-                const TabBar(
-                  labelColor: AppTheme.primaryColor,
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: AppTheme.primaryColor,
-                  tabs: [
-                    Tab(text: 'Plantilla'),
-                    Tab(text: 'Finanzas'),
-                    Tab(text: 'Estadísticas'),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Tab views
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      // Tab 1: Plantilla
-                      _buildSquadTab(teamPlayers),
-
-                      // Tab 2: Finanzas
-                      _buildFinancesTab(),
-
-                      // Tab 3: Estadísticas
-                      _buildStatsTab(),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        _buildSquadTab(teamPlayers),
+                        _buildFinancesTab(),
+                        _buildStatsTab(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -461,11 +433,6 @@ class TeamCard extends StatelessWidget {
               'Plantilla (${teamPlayers.length} jugadores)',
               style: AppTheme.titleStyle,
             ),
-            if (team.formation != null)
-              Text(
-                team.formation!,
-                style: AppTheme.titleStyle.copyWith(color: AppTheme.primaryColor),
-              ),
           ],
         ),
         const SizedBox(height: 8),
@@ -486,7 +453,7 @@ class TeamCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          player.position,
+                          PositionUtils.normalize(player.position),
                           style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -611,8 +578,8 @@ class TeamCard extends StatelessWidget {
           const SizedBox(height: 20),
           
           if (team.competitionStats != null && team.competitionStats!.isNotEmpty) ...[
-            const Text(
-              'Estadísticas por Competición',
+            Text(
+              'Estadísticas por Evento',
               style: AppTheme.titleStyle,
             ),
             const SizedBox(height: 16),
@@ -792,7 +759,7 @@ class TeamCard extends StatelessWidget {
       case 'comp_2': return 'Copa del Rey Master';
       case 'comp_3': return 'Champions League Master';
       case 'comp_4': return 'Supercopa Master';
-      case 'comp_5': return 'Torneo de Verano';
+      case 'comp_5': return 'Evento de Verano';
       case 'comp_6': return 'Copa de Invierno';
       default: return competitionId;
     }

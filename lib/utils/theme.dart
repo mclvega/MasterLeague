@@ -224,11 +224,39 @@ class AppTheme {
     final pos = position.toUpperCase();
     if (pos.contains('GK') || pos.contains('PORTER')) {
       return positionColors['GK']!;
-    } else if (pos.contains('DEF') || pos.contains('CB') || pos.contains('LB') || pos.contains('RB')) {
+    } else if (pos.contains('DEF') ||
+        pos.contains('CB') ||
+        pos.contains('LB') ||
+        pos.contains('RB') ||
+        pos == 'CT' ||
+        pos == 'DEC' ||
+        pos == 'LI' ||
+        pos == 'LD') {
       return positionColors['DEF']!;
-    } else if (pos.contains('MID') || pos.contains('CM') || pos.contains('CDM') || pos.contains('CAM')) {
+    } else if (pos.contains('MID') ||
+        pos.contains('CM') ||
+        pos.contains('CDM') ||
+        pos.contains('CAM') ||
+        pos == 'II' ||
+        pos == 'MDI' ||
+        pos == 'ID' ||
+        pos == 'MDD' ||
+        pos == 'MP' ||
+        pos == 'MO' ||
+        pos == 'MC' ||
+        pos == 'MCD') {
       return positionColors['MID']!;
-    } else if (pos.contains('FW') || pos.contains('ST') || pos.contains('CF') || pos.contains('LW') || pos.contains('RW')) {
+    } else if (pos.contains('FW') ||
+        pos.contains('ST') ||
+        pos.contains('CF') ||
+        pos.contains('LW') ||
+        pos.contains('RW') ||
+        pos == 'EI' ||
+        pos == 'EXI' ||
+        pos == 'ED' ||
+        pos == 'EXD' ||
+        pos == 'SD' ||
+        pos == 'DC') {
       return positionColors['FW']!;
     } else {
       return Colors.grey;
