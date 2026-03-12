@@ -29,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const PlayersScreen(),
         const TeamsScreen(),
         CompetitionsScreen(initialTabIndex: _eventsInitialTab),
+      const InProgressTab(),
       ];
 
   @override
@@ -83,12 +84,22 @@ class _HomeScreenState extends State<HomeScreen> {
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         showUnselectedLabels: true,
-        onTap: (index) => setState(() {
-          _selectedIndex = index;
-          if (index == 3) {
-            _eventsInitialTab = 0;
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+            if (index == 3) {
+              _eventsInitialTab = 0;
+            }
+          });
+
+          if (index == 4) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('La pestaña Prueba está en proceso'),
+              ),
+            );
           }
-        }),
+        },
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.white70,
         backgroundColor: AppTheme.primaryColor,
@@ -118,7 +129,25 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.emoji_events),
             label: 'Eventos',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.science_outlined),
+            label: 'Prueba',
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class InProgressTab extends StatelessWidget {
+  const InProgressTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'Esta seccion esta en proceso',
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
       ),
     );
   }
