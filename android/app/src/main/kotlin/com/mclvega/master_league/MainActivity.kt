@@ -1,4 +1,4 @@
-package com.example.master_league
+package com.mclvega.master_league
 
 import io.flutter.embedding.android.FlutterActivity
 
