@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:typed_data';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../providers/player_provider.dart';
 import '../providers/team_provider.dart';
 import '../providers/competition_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/image_cache_service.dart';
+import '../services/reglamento_pdf_cache_service.dart';
+import '../services/canjes_pdf_cache_service.dart';
 import '../models/competition.dart';
 import '../utils/theme.dart';
 import '../utils/number_format_utils.dart';
@@ -29,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const PlayersScreen(),
         const TeamsScreen(),
         CompetitionsScreen(initialTabIndex: _eventsInitialTab),
-      const InProgressTab(),
+      const ExtrasTab(),
       ];
 
   @override
@@ -53,28 +58,35 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.transparent,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              context.read<PlayerProvider>().loadDataFromJsonUrl();
-              context.read<TeamProvider>().loadDataFromJsonUrl();
-              context.read<CompetitionProvider>().loadDataFromJsonUrl();
-            },
-            tooltip: 'Recargar Datos',
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.white),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
+        actions: _selectedIndex == 0
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: () async {
+                    await Future.wait([
+                      context.read<PlayerProvider>().loadDataFromJsonUrl(),
+                      context.read<TeamProvider>().loadDataFromJsonUrl(),
+                      context.read<CompetitionProvider>().loadDataFromJsonUrl(),
+                      ImageCacheService().updateImages(),
+                      ReglamentoPdfCacheService().updatePdf(),
+                      CanjesPdfCacheService().updatePdf(),
+                    ]);
+                  },
+                  tooltip: 'Recargar Datos',
                 ),
-              );
-            },
-            tooltip: 'Configuraciones',
-          ),
-        ],
+                IconButton(
+                  icon: const Icon(Icons.settings, color: Colors.white),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsScreen(),
+                      ),
+                    );
+                  },
+                  tooltip: 'Configuraciones',
+                ),
+              ]
+            : const [],
       ),
       body: Container(
         decoration: AppTheme.backgroundDecoration, // Aplicar fondo con imagen
@@ -91,14 +103,6 @@ class _HomeScreenState extends State<HomeScreen> {
               _eventsInitialTab = 0;
             }
           });
-
-          if (index == 4) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('La pestaña Prueba está en proceso'),
-              ),
-            );
-          }
         },
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.white70,
@@ -130,8 +134,8 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Eventos',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.science_outlined),
-            label: 'Prueba',
+            icon: Icon(Icons.extension),
+            label: 'Extras',
           ),
         ],
       ),
@@ -139,15 +143,228 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class InProgressTab extends StatelessWidget {
-  const InProgressTab({super.key});
+class ExtrasTab extends StatefulWidget {
+  const ExtrasTab({super.key});
+
+  @override
+  State<ExtrasTab> createState() => _ExtrasTabState();
+}
+
+class _ExtrasTabState extends State<ExtrasTab> {
+  int _selectedSection = 0;
+  final ReglamentoPdfCacheService _reglamentoCache =
+      ReglamentoPdfCacheService();
+  final CanjesPdfCacheService _canjesCache =
+      CanjesPdfCacheService();
+  Uint8List? _reglamentoPdfBytes;
+  Uint8List? _canjesPdfBytes;
+  bool _isLoadingReglamento = false;
+  bool _isLoadingCanjes = false;
+  String? _reglamentoError;
+  String? _canjesError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReglamentoPdf();
+    _loadCanjesPdf();
+  }
+
+  Future<void> _loadReglamentoPdf() async {
+    setState(() {
+      _isLoadingReglamento = true;
+      _reglamentoError = null;
+    });
+
+    try {
+      await _reglamentoCache.initialize();
+      final bytes = await _reglamentoCache.getPdfBytes();
+
+      if (!mounted) return;
+
+      if (bytes == null || bytes.isEmpty) {
+        setState(() {
+          _reglamentoError = 'No se encontro un PDF local del reglamento';
+          _isLoadingReglamento = false;
+        });
+        return;
+      }
+
+      setState(() {
+        _reglamentoPdfBytes = bytes;
+        _isLoadingReglamento = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _reglamentoError = 'No se pudo cargar el reglamento: $e';
+        _isLoadingReglamento = false;
+      });
+    }
+  }
+
+  Future<void> _loadCanjesPdf() async {
+    setState(() {
+      _isLoadingCanjes = true;
+      _canjesError = null;
+    });
+
+    try {
+      await _canjesCache.initialize();
+      final bytes = await _canjesCache.getPdfBytes();
+
+      if (!mounted) return;
+
+      if (bytes == null || bytes.isEmpty) {
+        setState(() {
+          _canjesError = 'No se encontro un PDF local de canjes';
+          _isLoadingCanjes = false;
+        });
+        return;
+      }
+
+      setState(() {
+        _canjesPdfBytes = bytes;
+        _isLoadingCanjes = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _canjesError = 'No se pudo cargar canjes: $e';
+        _isLoadingCanjes = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Esta seccion esta en proceso',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedSection = 0;
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _selectedSection == 0
+                        ? AppTheme.accentColor
+                        : Colors.white24,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Reglamento'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedSection = 1;
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _selectedSection == 1
+                        ? AppTheme.accentColor
+                        : Colors.white24,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Canjes'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: Container(
+              alignment: Alignment.topLeft,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: _selectedSection == 0
+                  ? _buildReglamentoContent()
+                  : _buildCanjesContent(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReglamentoContent() {
+    if (_isLoadingReglamento) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_reglamentoError != null) {
+      return Center(
+        child: Text(
+          _reglamentoError!,
+          style: const TextStyle(color: Colors.white),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    if (_reglamentoPdfBytes == null || _reglamentoPdfBytes!.isEmpty) {
+      return const Center(
+        child: Text(
+          'No hay contenido de reglamento disponible',
+          style: TextStyle(color: Colors.white),
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SfPdfViewer.memory(
+        _reglamentoPdfBytes!,
+        canShowScrollHead: true,
+        canShowScrollStatus: true,
+        pageSpacing: 4,
+      ),
+    );
+  }
+
+  Widget _buildCanjesContent() {
+    if (_isLoadingCanjes) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_canjesError != null) {
+      return Center(
+        child: Text(
+          _canjesError!,
+          style: const TextStyle(color: Colors.white),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    if (_canjesPdfBytes == null || _canjesPdfBytes!.isEmpty) {
+      return const Center(
+        child: Text(
+          'No hay contenido de canjes disponible',
+          style: TextStyle(color: Colors.white),
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SfPdfViewer.memory(
+        _canjesPdfBytes!,
+        canShowScrollHead: true,
+        canShowScrollStatus: true,
+        pageSpacing: 4,
       ),
     );
   }
@@ -205,6 +422,12 @@ class _DashboardTabState extends State<DashboardTab>
   }
 
   Future<void> _initializeApp() async {
+    await Future.wait([
+      ImageCacheService().initialize(),
+      ReglamentoPdfCacheService().initialize(),
+      CanjesPdfCacheService().initialize(),
+    ]);
+
     // Primero, cargar configuración
     final settingsProvider = context.read<SettingsProvider>();
     await settingsProvider.loadSettings();
@@ -584,6 +807,7 @@ class _DashboardTabState extends State<DashboardTab>
     PlayerProvider playerProvider,
   ) {
     final defaultTeam = teamProvider.getTeamById(settingsProvider.defaultTeamId!);
+    final logoUrl = _normalizeLogoUrl(defaultTeam?.logoUrl);
 
     if (defaultTeam == null) {
       return Card(
@@ -639,9 +863,9 @@ class _DashboardTabState extends State<DashboardTab>
                     child: SizedBox(
                       width: 56,
                       height: 56,
-                      child: (defaultTeam.logoUrl != null && defaultTeam.logoUrl!.isNotEmpty)
+                      child: (logoUrl != null)
                           ? Image.network(
-                              defaultTeam.logoUrl!,
+                              logoUrl,
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => AppTheme.buildAppLogo(width: 56, height: 56),
                             )
@@ -731,6 +955,28 @@ class _DashboardTabState extends State<DashboardTab>
         Text(value, style: AppTheme.titleStyle.copyWith(color: AppTheme.primaryColor)),
       ],
     );
+  }
+
+  String? _normalizeLogoUrl(String? rawUrl) {
+    if (rawUrl == null) return null;
+    final value = rawUrl.trim();
+    if (value.isEmpty) return null;
+
+    // drive.google.com/file/d/<id>/...
+    final fileDMatch = RegExp(r'drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)').firstMatch(value);
+    if (fileDMatch != null) {
+      final fileId = fileDMatch.group(1)!;
+      return 'https://drive.google.com/thumbnail?id=$fileId&sz=w200';
+    }
+
+    // drive.google.com/open?id=<id> or /uc?id=<id>
+    final idParamMatch = RegExp(r'drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([a-zA-Z0-9_-]+)').firstMatch(value);
+    if (idParamMatch != null) {
+      final fileId = idParamMatch.group(1)!;
+      return 'https://drive.google.com/thumbnail?id=$fileId&sz=w200';
+    }
+
+    return value;
   }
 
   

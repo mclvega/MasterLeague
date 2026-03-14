@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/competition.dart';
 import '../models/match_fixture.dart';
 import '../services/file_import_service_simple.dart';
+import '../utils/app_links.dart';
 
 class CompetitionProvider with ChangeNotifier {
   final List<Competition> _competitions = [];
@@ -163,8 +164,7 @@ class CompetitionProvider with ChangeNotifier {
 
   Future<void> loadDataFromJsonUrl() async {
     // Google Sheets URL (se exporta automaticamente a Excel)
-    const String excelUrl =
-        'https://docs.google.com/spreadsheets/d/1QwBnvXQpDXIb5q4AUd3Sh4PI1zjmTQ03/export?format=xlsx';
+    final String excelUrl = AppLinks.masterLeagueExcelExport;
 
     try {
       setLoading(true);

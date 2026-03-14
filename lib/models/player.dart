@@ -13,6 +13,7 @@ class Player {
   final String? contractDuration;
   final String? contractStart;
   final String? contractEnd;
+  final String? photoUrl;
 
   Player({
     required this.id,
@@ -27,6 +28,7 @@ class Player {
     this.contractDuration,
     this.contractStart,
     this.contractEnd,
+    this.photoUrl,
   });
 
   factory Player.fromMap(Map<String, dynamic> map) {
@@ -43,6 +45,7 @@ class Player {
       contractDuration: map['contractDuration']?.toString() ?? map['contract_duration']?.toString(),
       contractStart: map['contractStart']?.toString() ?? map['contract_start']?.toString(),
       contractEnd: map['contractEnd']?.toString() ?? map['contract_end']?.toString(),
+      photoUrl: map['photoUrl']?.toString() ?? map['photo_url']?.toString() ?? map['photo']?.toString(),
     );
   }
 
@@ -60,6 +63,7 @@ class Player {
       'contractDuration': contractDuration,
       'contractStart': contractStart,
       'contractEnd': contractEnd,
+      'photoUrl': photoUrl,
     };
   }
 
@@ -85,6 +89,7 @@ class Player {
     String? contractDuration,
     String? contractStart,
     String? contractEnd,
+    String? photoUrl,
   }) {
     return Player(
       id: id ?? this.id,
@@ -99,6 +104,7 @@ class Player {
       contractDuration: contractDuration ?? this.contractDuration,
       contractStart: contractStart ?? this.contractStart,
       contractEnd: contractEnd ?? this.contractEnd,
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 

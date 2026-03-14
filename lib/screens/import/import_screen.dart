@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../providers/player_provider.dart';
+import '../../utils/app_links.dart';
 import '../../utils/theme.dart';
 
 class ImportScreen extends StatefulWidget {
@@ -78,10 +79,10 @@ class _ImportScreenState extends State<ImportScreen> {
                         const SizedBox(height: 16),
                         TextField(
                           controller: _urlController,
-                          decoration: const InputDecoration(
-                            hintText: 'https://ejemplo.com/jugadores.xlsx',
+                          decoration: InputDecoration(
+                            hintText: AppLinks.importUrlHint,
                             labelText: 'URL del archivo',
-                            prefixIcon: Icon(Icons.link),
+                            prefixIcon: const Icon(Icons.link),
                           ),
                           keyboardType: TextInputType.url,
                         ),

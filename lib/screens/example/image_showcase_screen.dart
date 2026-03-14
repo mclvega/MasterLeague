@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/image_cache_service.dart';
+import '../../utils/app_links.dart';
 import '../../utils/theme.dart';
 
 class ImageShowcaseScreen extends StatefulWidget {
@@ -262,8 +263,8 @@ class _ImageShowcaseScreenState extends State<ImageShowcaseScreen> {
                             
                             _TechnicalInfo('URLs de origen'),
                             const SizedBox(height: 8),
-                            _TechnicalDetail('Logo', 'https://mrrichar.netlify.app/Logo%20Liga%20Master_.png'),
-                            _TechnicalDetail('Fondo', 'https://mrrichar.netlify.app/fondo-default1.png'),
+                            _TechnicalDetail('Logo', AppLinks.appLogoImage),
+                            _TechnicalDetail('Fondo', AppLinks.appBackgroundImage),
                             
                             const SizedBox(height: 16),
                             _TechnicalInfo('Rutas locales'),

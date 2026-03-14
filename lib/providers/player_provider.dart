@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/player.dart';
 import '../services/file_import_service_simple.dart';
 import '../utils/position_utils.dart';
+import '../utils/app_links.dart';
 
 class PlayerProvider with ChangeNotifier {
   static const Map<String, int> _positionSortOrder = {
@@ -215,8 +216,7 @@ class PlayerProvider with ChangeNotifier {
 
   Future<void> loadDataFromJsonUrl() async {
     // Google Sheets URL (se exporta automaticamente a Excel)
-    const String excelUrl =
-        'https://docs.google.com/spreadsheets/d/1QwBnvXQpDXIb5q4AUd3Sh4PI1zjmTQ03/export?format=xlsx';
+    final String excelUrl = AppLinks.masterLeagueExcelExport;
     
     try {
       setLoading(true);

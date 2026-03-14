@@ -8,6 +8,7 @@ import '../models/player.dart';
 import '../models/team.dart';
 import '../models/competition.dart';
 import '../models/match_fixture.dart';
+import '../utils/app_links.dart';
 
 class FileImportService {
   static Future<Map<String, dynamic>> downloadAndLoadExcelData(String url) async {
@@ -83,7 +84,7 @@ class FileImportService {
     final match = idRegex.firstMatch(url);
     if (match != null) {
       final id = match.group(1)!;
-      return 'https://docs.google.com/spreadsheets/d/$id/export?format=xlsx';
+      return AppLinks.googleSheetsExcelExport(id);
     }
     return url;
   }
@@ -235,6 +236,7 @@ class FileImportService {
           contractDuration: contractDuration,
           contractStart: contractStart,
           contractEnd: contractEnd,
+          photoUrl: _nullable(_cell(row, headers, ['photourl', 'photo', 'imagen', 'foto', 'imageurl', 'image', 'fotojugador'], fallbackIndex: -1)),
         ),
       );
     }

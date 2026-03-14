@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import '../utils/app_links.dart';
 
 class ImageCacheService {
   static final ImageCacheService _instance = ImageCacheService._internal();
@@ -10,8 +11,8 @@ class ImageCacheService {
   ImageCacheService._internal();
 
   // URLs de las imágenes a descargar
-  static const String logoUrl = 'https://mrrichar.netlify.app/Logo%20Liga%20Master_.png';
-  static const String backgroundUrl = 'https://mrrichar.netlify.app/fondo-default1.png';
+  static const String logoUrl = AppLinks.appLogoImage;
+  static const String backgroundUrl = AppLinks.appBackgroundImage;
   
   // Nombres de archivos locales
   static const String logoFileName = 'app_logo.png';

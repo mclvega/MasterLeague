@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/team.dart';
 import '../services/file_import_service_simple.dart';
 import '../services/database_service.dart';
+import '../utils/app_links.dart';
 
 class TeamProvider with ChangeNotifier {
   final DatabaseService _db = DatabaseService();
@@ -117,8 +118,7 @@ class TeamProvider with ChangeNotifier {
 
   Future<void> loadDataFromJsonUrl() async {
     // Google Sheets URL (se exporta automaticamente a Excel)
-    const String excelUrl =
-        'https://docs.google.com/spreadsheets/d/1QwBnvXQpDXIb5q4AUd3Sh4PI1zjmTQ03/export?format=xlsx';
+    final String excelUrl = AppLinks.masterLeagueExcelExport;
     
     try {
       setLoading(true);

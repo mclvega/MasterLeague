@@ -120,6 +120,7 @@ void main() {
     'contractDuration',
     'contractStart',
     'contractEnd',
+    'photo',
   ];
 
   final teamsHeaders = [
@@ -207,6 +208,7 @@ void main() {
         '$durationYears años',
         '2026-07-01',
         '$endYear-06-30',
+        '',
       ]);
 
       playerCounter++;

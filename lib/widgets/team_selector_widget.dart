@@ -5,6 +5,7 @@ import '../providers/team_provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/number_format_utils.dart';
 
+
 class TeamSelectorWidget extends StatefulWidget {
   final String? title;
   final bool showDefaultTeamOption;
@@ -91,18 +92,7 @@ class _TeamSelectorWidgetState extends State<TeamSelectorWidget> {
       elevation: isSelected ? 4.0 : 1.0,
       color: isSelected ? Theme.of(context).primaryColor.withOpacity(0.1) : null,
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: isSelected 
-              ? Theme.of(context).primaryColor 
-              : Colors.grey[600],
-          child: Text(
-            team.name.isNotEmpty ? team.name[0].toUpperCase() : '?',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
+        leading: _buildTeamAvatar(team, isSelected),
         title: Row(
           children: [
             Expanded(
@@ -178,6 +168,61 @@ class _TeamSelectorWidgetState extends State<TeamSelectorWidget> {
         },
       ),
     );
+  }
+
+  Widget _buildTeamAvatar(Team team, bool isSelected) {
+    final logo = _normalizeLogoUrl(team.logoUrl);
+    if (logo != null) {
+      return CircleAvatar(
+        backgroundColor: Colors.white,
+        child: ClipOval(
+          child: Image.network(
+            logo,
+            width: 40,
+            height: 40,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildTeamInitialAvatar(team, isSelected),
+          ),
+        ),
+      );
+    }
+
+    return _buildTeamInitialAvatar(team, isSelected);
+  }
+
+  Widget _buildTeamInitialAvatar(Team team, bool isSelected) {
+    return CircleAvatar(
+      backgroundColor: isSelected ? Theme.of(context).primaryColor : Colors.grey[600],
+      child: Text(
+        team.name.isNotEmpty ? team.name[0].toUpperCase() : '?',
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  String? _normalizeLogoUrl(String? rawUrl) {
+    if (rawUrl == null) return null;
+    final value = rawUrl.trim();
+    if (value.isEmpty) return null;
+
+    // drive.google.com/file/d/<id>/...
+    final fileDMatch = RegExp(r'drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)').firstMatch(value);
+    if (fileDMatch != null) {
+      final fileId = fileDMatch.group(1)!;
+      return 'https://drive.google.com/thumbnail?id=$fileId&sz=w200';
+    }
+
+    // drive.google.com/open?id=<id> or /uc?id=<id>
+    final idParamMatch = RegExp(r'drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([a-zA-Z0-9_-]+)').firstMatch(value);
+    if (idParamMatch != null) {
+      final fileId = idParamMatch.group(1)!;
+      return 'https://drive.google.com/thumbnail?id=$fileId&sz=w200';
+    }
+
+    return value;
   }
 
   @override

@@ -125,12 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 } else {
                                   await settingsProvider.setDefaultTeam(team);
                                   if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('${team.name} establecido como equipo por defecto'),
-                                        backgroundColor: AppTheme.primaryColor,
-                                      ),
-                                    );
+                                    Navigator.of(context).pop();
                                   }
                                 }
                               } catch (e) {

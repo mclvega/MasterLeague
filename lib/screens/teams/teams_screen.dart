@@ -7,6 +7,19 @@ import '../../models/team.dart';
 import '../../utils/number_format_utils.dart';
 import '../../utils/position_utils.dart';
 import '../../utils/theme.dart';
+import '../../widgets/player_card.dart';
+
+String? _normalizePhotoUrl(String? url) {
+  if (url == null || url.trim().isEmpty) return null;
+  final u = url.trim();
+  final match = RegExp(r'(?:file/d/|open\?id=|uc\?id=)([^/&?]+)').firstMatch(u);
+  if (match != null) {
+    return 'https://drive.google.com/thumbnail?id=${match.group(1)}&sz=w200';
+  }
+  if (u.startsWith('http')) return u;
+  return null;
+}
+
 
 class TeamsScreen extends StatelessWidget {
   const TeamsScreen({super.key});
@@ -366,13 +379,18 @@ class TeamCard extends StatelessWidget {
     final value = rawUrl.trim();
     if (value.isEmpty) return null;
 
-    // Convert common Google Drive share links to direct-view links.
-    final driveMatch = RegExp(r'drive\.google\.com\/file\/d\/([^\/]+)').firstMatch(value);
-    if (driveMatch != null) {
-      final fileId = driveMatch.group(1);
-      if (fileId != null && fileId.isNotEmpty) {
-        return 'https://drive.google.com/uc?export=view&id=$fileId';
-      }
+    // drive.google.com/file/d/<id>/...
+    final fileDMatch = RegExp(r'drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)').firstMatch(value);
+    if (fileDMatch != null) {
+      final fileId = fileDMatch.group(1)!;
+      return 'https://drive.google.com/thumbnail?id=$fileId&sz=w200';
+    }
+
+    // drive.google.com/open?id=<id> or /uc?id=<id>
+    final idParamMatch = RegExp(r'drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([a-zA-Z0-9_-]+)').firstMatch(value);
+    if (idParamMatch != null) {
+      final fileId = idParamMatch.group(1)!;
+      return 'https://drive.google.com/thumbnail?id=$fileId&sz=w200';
     }
 
     return value;
@@ -866,13 +884,6 @@ class _TeamSquadTabState extends State<TeamSquadTab> {
         .toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
-    final activeFilters = [
-      if (_selectedPosition != null) 'Posición: $_selectedPosition',
-      if (_selectedCountry != null) 'País: $_selectedCountry',
-      if (_selectedMinPrice != null) 'Min: ${_selectedMinPrice!.toStringAsFixed(0)}',
-      if (_selectedMaxPrice != null) 'Max: ${_selectedMaxPrice!.toStringAsFixed(0)}',
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -932,20 +943,60 @@ class _TeamSquadTabState extends State<TeamSquadTab> {
                       }
                     }
 
+                    final photoUrl = _normalizePhotoUrl(player.photoUrl);
+                    final initials = player.name.trim().split(' ')
+                        .where((w) => w.isNotEmpty)
+                        .take(2)
+                        .map((w) => w[0].toUpperCase())
+                        .join();
+
                     return ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppTheme.getPositionColor(player.position),
-                          borderRadius: BorderRadius.circular(4),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PlayerDetailsScreen(player: player),
                         ),
-                        child: Text(
-                          PositionUtils.normalize(player.position),
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                      ),
+                      leading: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: AppTheme.primaryColor.withOpacity(0.15),
+                            child: photoUrl != null
+                                ? ClipOval(
+                                    child: Image.network(
+                                      photoUrl,
+                                      width: 64,
+                                      height: 64,
+                                      fit: BoxFit.cover,
+                                      alignment: const Alignment(1.0, -1.0),
+                                      errorBuilder: (_, __, ___) => Text(
+                                        initials.isNotEmpty ? initials : '?',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    initials.isNotEmpty ? initials : '?',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                                  ),
                           ),
-                        ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.getPositionColor(player.position),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              PositionUtils.normalize(player.position),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       title: Text(player.name),
                       subtitle: Text(subtitle.toString()),

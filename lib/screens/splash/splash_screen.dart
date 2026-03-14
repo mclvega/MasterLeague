@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/image_cache_service.dart';
+import '../../utils/app_links.dart';
 import '../home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -184,7 +185,7 @@ class _SplashScreenState extends State<SplashScreen>
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.network(
-                                'https://mrrichar.netlify.app/Logo%20Liga%20Master_.png',
+                                AppLinks.appLogoImage,
                                 width: 80,
                                 height: 80,
                                 fit: BoxFit.contain,

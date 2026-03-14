@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_links.dart';
 
 class AppTheme {
   // Color principal azul moderno con letras blancas
@@ -10,8 +11,8 @@ class AppTheme {
   static const Color errorColor = Color(0xFFD32F2F);
   
   // URLs de imágenes remotas (fallback)
-  static const String backgroundImageUrl = 'https://mrrichar.netlify.app/fondo-default1.png';
-  static const String logoImageUrl = 'https://mrrichar.netlify.app/Logo%20Liga%20Master_.png';
+  static const String backgroundImageUrl = AppLinks.appBackgroundImage;
+  static const String logoImageUrl = AppLinks.appLogoImage;
 
   static ThemeData lightTheme = ThemeData(
     primarySwatch: Colors.blue,

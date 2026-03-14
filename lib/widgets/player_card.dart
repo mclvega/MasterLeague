@@ -6,6 +6,17 @@ import '../utils/number_format_utils.dart';
 import '../utils/position_utils.dart';
 import '../utils/theme.dart';
 
+String? _normalizePhotoUrl(String? url) {
+  if (url == null || url.trim().isEmpty) return null;
+  final u = url.trim();
+  final match = RegExp(r'(?:file/d/|open\?id=|uc\?id=)([^/&?]+)').firstMatch(u);
+  if (match != null) {
+    return 'https://drive.google.com/thumbnail?id=${match.group(1)}&sz=w200';
+  }
+  if (u.startsWith('http')) return u;
+  return null;
+}
+
 class PlayerCard extends StatelessWidget {
   final Player player;
 
@@ -34,6 +45,7 @@ class PlayerCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
+                      _buildPlayerAvatar(),
                       _buildPositionChip(),
                       const SizedBox(width: 12),
                       Expanded(
@@ -132,6 +144,43 @@ class PlayerCard extends StatelessWidget {
     );
   }
 
+  Widget _buildPlayerAvatar() {
+    final photoUrl = _normalizePhotoUrl(player.photoUrl);
+    final initials = player.name.trim().split(' ')
+        .where((w) => w.isNotEmpty)
+        .take(2)
+        .map((w) => w[0].toUpperCase())
+        .join();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CircleAvatar(
+          radius: 22,
+          backgroundColor: AppTheme.primaryColor.withOpacity(0.15),
+          child: photoUrl != null
+              ? ClipOval(
+                  child: Image.network(
+                    photoUrl,
+                    width: 64,
+                    height: 64,
+                    fit: BoxFit.cover,
+                    alignment: const Alignment(1.0, -1.0),
+                    errorBuilder: (_, __, ___) => Text(
+                      initials.isNotEmpty ? initials : '?',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ),
+                )
+              : Text(
+                  initials.isNotEmpty ? initials : '?',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+        ),
+        const SizedBox(width: 8),
+      ],
+    );
+  }
+
   Widget _buildPositionChip() {
     final color = AppTheme.getPositionColor(player.position);
     
@@ -183,6 +232,43 @@ class PlayerDetailsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Builder(
+                builder: (context) {
+                  final photoUrl = _normalizePhotoUrl(player.photoUrl);
+                  final initials = player.name.trim().split(' ')
+                      .where((w) => w.isNotEmpty)
+                      .take(2)
+                      .map((w) => w[0].toUpperCase())
+                      .join();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Center(
+                      child: CircleAvatar(
+                        radius: 60,
+                        backgroundColor: AppTheme.primaryColor.withOpacity(0.15),
+                        child: photoUrl != null
+                            ? ClipOval(
+                                child: Image.network(
+                                  photoUrl,
+                                  width: 180,
+                                  height: 180,
+                                  fit: BoxFit.cover,
+                                  alignment: const Alignment(1.0, -1.0),
+                                  errorBuilder: (_, __, ___) => Text(
+                                    initials.isNotEmpty ? initials : '?',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 40),
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                initials.isNotEmpty ? initials : '?',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 40),
+                              ),
+                      ),
+                    ),
+                  );
+                },
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
