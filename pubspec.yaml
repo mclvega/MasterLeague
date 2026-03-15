@@ -2,7 +2,7 @@ name: master_league
 description: A Flutter application for organizing football master leagues
 publish_to: 'none'
 
-version: 1.0.2+4
+version: 1.0.3+5
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
