@@ -21,8 +21,9 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'master_league.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
   }
 
@@ -60,6 +61,7 @@ class DatabaseService {
         name TEXT NOT NULL,
         position TEXT,
         team_id TEXT,
+        is_free INTEGER DEFAULT 0,
         price REAL DEFAULT 0,
         data_json TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -79,6 +81,14 @@ class DatabaseService {
     ''');
 
     print('✅ Base de datos Master League creada');
+  }
+
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute(
+        'ALTER TABLE players_cache ADD COLUMN is_free INTEGER DEFAULT 0',
+      );
+    }
   }
 
   // === CONFIGURACIONES ===
@@ -172,7 +182,8 @@ class DatabaseService {
         'id': player.id,
         'name': player.name,
         'position': player.position,
-        'team_id': player.teamId,
+        'team_id': player.assignedTeamId,
+        'is_free': player.isFreeAgent ? 1 : 0,
         'price': player.price,
         'data_json': player.toJson(),
         'updated_at': now,

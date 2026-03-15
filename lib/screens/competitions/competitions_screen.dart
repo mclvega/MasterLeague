@@ -4,9 +4,9 @@ import '../../providers/competition_provider.dart';
 import '../../providers/team_provider.dart';
 import '../../models/competition.dart';
 import '../../models/team.dart';
+import '../../utils/date_utils.dart';
 import '../../utils/number_format_utils.dart';
 import '../../utils/theme.dart';
-import 'package:intl/intl.dart';
 import 'competition_fixture_screen.dart';
 
 class CompetitionsScreen extends StatelessWidget {
@@ -154,6 +154,9 @@ class CompetitionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final startDate = AppDateUtils.formatDate(competition.startDate);
+    final endDate = AppDateUtils.formatDate(competition.endDate);
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: InkWell(
@@ -198,20 +201,24 @@ class CompetitionCard extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    DateFormat('dd/MM/yyyy').format(competition.startDate),
-                    style: AppTheme.captionStyle,
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    DateFormat('dd/MM/yyyy').format(competition.endDate!),
-                    style: AppTheme.captionStyle,
-                  ),
-                  const SizedBox(width: 16),
+                  if (startDate != null) ...[
+                    Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      startDate,
+                      style: AppTheme.captionStyle,
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (endDate != null) ...[
+                    Icon(Icons.event_available, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      endDate,
+                      style: AppTheme.captionStyle,
+                    ),
+                    const SizedBox(width: 16),
+                  ],
                   Icon(Icons.group, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
@@ -425,9 +432,10 @@ class CompetitionDetailsScreen extends StatelessWidget {
               children: [
                 _buildDetailRow('Tipo de evento', _getTypeLabel()),
                 _buildDetailRow('Estado', _getStatusLabel()),
-                _buildDetailRow('Fecha de inicio', DateFormat('dd/MM/yyyy').format(competition.startDate)),
-                if (competition.endDate != null)
-                  _buildDetailRow('Fecha de fin', DateFormat('dd/MM/yyyy').format(competition.endDate!)),
+                if (AppDateUtils.formatDate(competition.startDate) != null)
+                  _buildDetailRow('Fecha de inicio', AppDateUtils.formatDate(competition.startDate)!),
+                if (AppDateUtils.formatDate(competition.endDate) != null)
+                  _buildDetailRow('Fecha de fin', AppDateUtils.formatDate(competition.endDate)!),
                 _buildDetailRow('Premio', '\$${NumberFormatUtils.money(competition.prizePool)}'),
                 _buildDetailRow('Participantes', '${competition.participantCount} equipos'),
               ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/player.dart';
 import '../providers/team_provider.dart';
+import '../utils/date_utils.dart';
 import '../utils/number_format_utils.dart';
 import '../utils/position_utils.dart';
 import '../utils/theme.dart';
@@ -29,8 +30,8 @@ class PlayerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<TeamProvider>(
       builder: (context, teamProvider, child) {
-        final team = player.teamId != null 
-            ? teamProvider.getTeamById(player.teamId!)
+        final team = player.assignedTeamId != null
+            ? teamProvider.getTeamById(player.assignedTeamId!)
             : null;
 
         return Card(
@@ -86,16 +87,11 @@ class PlayerCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(
-                        Icons.cake,
-                        size: 16,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${player.age} años',
-                        style: AppTheme.captionStyle,
-                      ),
+                      _buildStatusChip(),
+                      if (player.contractDurationFormatted != null) ...[
+                        const SizedBox(width: 8),
+                        _buildContractDurationChip(),
+                      ],
                       const Spacer(),
                       if (team != null) ...[
                         const Icon(
@@ -103,32 +99,14 @@ class PlayerCard extends StatelessWidget {
                           size: 16,
                           color: AppTheme.primaryColor,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            player.contractDurationFormatted != null
-                                ? '${team.name} • ${player.contractDurationFormatted}'
-                                : team.name,
+                            team.name,
                             overflow: TextOverflow.ellipsis,
                             style: AppTheme.captionStyle.copyWith(
                               color: AppTheme.primaryColor,
                               fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ] else ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.warningColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppTheme.warningColor),
-                          ),
-                          child: Text(
-                            'LIBRE',
-                            style: AppTheme.captionStyle.copyWith(
-                              color: AppTheme.warningColor,
-                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
@@ -195,6 +173,48 @@ class PlayerCard extends StatelessWidget {
         style: const TextStyle(
           color: Colors.black,
           fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip() {
+    final isFreeAgent = player.isFreeAgent;
+    final color = isFreeAgent ? AppTheme.warningColor : AppTheme.primaryColor;
+    final backgroundColor = isFreeAgent
+        ? AppTheme.warningColor.withOpacity(0.1)
+        : AppTheme.primaryColor.withOpacity(0.1);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color),
+      ),
+      child: Text(
+        isFreeAgent ? 'Agente libre' : 'Con equipo',
+        style: AppTheme.captionStyle.copyWith(
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContractDurationChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppTheme.infoColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.infoColor),
+      ),
+      child: Text(
+        player.contractDurationFormatted!,
+        style: AppTheme.captionStyle.copyWith(
+          color: AppTheme.infoColor,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -292,22 +312,25 @@ class PlayerDetailsScreen extends StatelessWidget {
               _buildDetailRow('Club', player.club),
               _buildDetailRow('Nacionalidad', player.nationality),
               _buildDetailRow('Edad', '${player.age} años'),
+              _buildDetailRow('Agente libre', player.isFreeAgent ? 'Sí' : 'No'),
               _buildDetailRow('Media', player.overall.toString()),
               _buildDetailRow('Precio', '\$${NumberFormatUtils.money(player.price)}'),
               if (!player.isFreeAgent) ...[
                 if (player.contractDurationFormatted != null)
                   _buildDetailRow('Duración de contrato', player.contractDurationFormatted!),
-                if (player.contractStart != null && player.contractStart!.trim().isNotEmpty)
-                  _buildDetailRow('Inicio de contrato', _formatContractDate(player.contractStart!)),
-                if (player.contractEnd != null && player.contractEnd!.trim().isNotEmpty)
-                  _buildDetailRow('Fin de contrato', _formatContractDate(player.contractEnd!)),
+                if (AppDateUtils.formatRawDate(player.contractStart) != null)
+                  _buildDetailRow('Inicio de contrato', AppDateUtils.formatRawDate(player.contractStart)!),
+                if (AppDateUtils.formatRawDate(player.contractEnd) != null)
+                  _buildDetailRow('Fin de contrato', AppDateUtils.formatRawDate(player.contractEnd)!),
               ],
               const SizedBox(height: 20),
               Consumer<TeamProvider>(
                 builder: (context, teamProvider, child) {
-                  final team = player.teamId != null
-                      ? teamProvider.getTeamById(player.teamId!)
+                  final team = player.assignedTeamId != null
+                      ? teamProvider.getTeamById(player.assignedTeamId!)
                       : null;
+                  final formattedStart = AppDateUtils.formatRawDate(player.contractStart);
+                  final formattedEnd = AppDateUtils.formatRawDate(player.contractEnd);
 
                   if (team != null) {
                     return Container(
@@ -337,8 +360,8 @@ class PlayerDetailsScreen extends StatelessWidget {
                             style: AppTheme.captionStyle,
                           ),
                           if (player.contractDuration != null ||
-                              player.contractStart != null ||
-                              player.contractEnd != null) ...[
+                              formattedStart != null ||
+                              formattedEnd != null) ...[
                             const SizedBox(height: 10),
                             const Divider(height: 1),
                             const SizedBox(height: 10),
@@ -351,10 +374,10 @@ class PlayerDetailsScreen extends StatelessWidget {
                             ),
                             if (player.contractDuration != null)
                               Text('Duración: ${player.contractDuration}', style: AppTheme.captionStyle),
-                            if (player.contractStart != null)
-                              Text('Inicio: ${player.contractStart}', style: AppTheme.captionStyle),
-                            if (player.contractEnd != null)
-                              Text('Fin: ${player.contractEnd}', style: AppTheme.captionStyle),
+                            if (formattedStart != null)
+                              Text('Inicio: $formattedStart', style: AppTheme.captionStyle),
+                            if (formattedEnd != null)
+                              Text('Fin: $formattedEnd', style: AppTheme.captionStyle),
                           ],
                         ],
                       ),
@@ -377,7 +400,7 @@ class PlayerDetailsScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Jugador Libre',
+                          'Agente libre',
                           style: AppTheme.titleStyle.copyWith(
                             color: AppTheme.warningColor,
                           ),
@@ -421,16 +444,6 @@ class PlayerDetailsScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatContractDate(String raw) {
-    final parsed = DateTime.tryParse(raw.trim());
-    if (parsed == null) return raw;
-
-    final day = parsed.day.toString().padLeft(2, '0');
-    final month = parsed.month.toString().padLeft(2, '0');
-    final year = parsed.year.toString();
-    return '$day/$month/$year';
   }
 
 }

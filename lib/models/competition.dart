@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../utils/date_utils.dart';
+
 enum CompetitionType { league, cup, tournament, event }
 
 enum CompetitionStatus { upcoming, ongoing, completed }
@@ -10,7 +12,7 @@ class Competition {
   final CompetitionType type;
   final CompetitionStatus status;
   final List<String> participantTeamIds;
-  final DateTime startDate;
+  final DateTime? startDate;
   final DateTime? endDate;
   final double prizePool;
   final String? description;
@@ -41,8 +43,8 @@ class Competition {
         orElse: () => CompetitionStatus.upcoming,
       ),
       participantTeamIds: List<String>.from(map['participantTeamIds'] ?? []),
-      startDate: DateTime.parse(map['startDate']),
-      endDate: map['endDate'] != null ? DateTime.parse(map['endDate']) : null,
+      startDate: AppDateUtils.parseNullableDate(map['startDate'] ?? map['start_date']),
+      endDate: AppDateUtils.parseNullableDate(map['endDate'] ?? map['end_date']),
       prizePool: (map['prizePool'] as num?)?.toDouble() ?? 0.0,
       description: map['description']?.toString(),
       rules: map['rules'] as Map<String, dynamic>?,
@@ -56,7 +58,7 @@ class Competition {
       'type': type.toString().split('.').last,
       'status': status.toString().split('.').last,
       'participantTeamIds': participantTeamIds,
-      'startDate': startDate.toIso8601String(),
+      'startDate': startDate?.toIso8601String(),
       'endDate': endDate?.toIso8601String(),
       'prizePool': prizePool,
       'description': description,

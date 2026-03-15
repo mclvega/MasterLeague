@@ -10,9 +10,9 @@ import '../services/image_cache_service.dart';
 import '../services/reglamento_pdf_cache_service.dart';
 import '../services/canjes_pdf_cache_service.dart';
 import '../models/competition.dart';
+import '../utils/date_utils.dart';
 import '../utils/theme.dart';
 import '../utils/number_format_utils.dart';
-import 'package:intl/intl.dart';
 import 'players/players_screen.dart';
 import 'teams/teams_screen.dart';
 import 'competitions/competitions_screen.dart';
@@ -786,10 +786,11 @@ class _DashboardTabState extends State<DashboardTab>
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        DateFormat('dd/MM/yyyy').format(event.startDate),
-                        style: AppTheme.captionStyle,
-                      ),
+                      if (AppDateUtils.formatDate(event.startDate) != null)
+                        Text(
+                          AppDateUtils.formatDate(event.startDate)!,
+                          style: AppTheme.captionStyle,
+                        ),
                     ],
                   ),
                 ),
@@ -828,8 +829,8 @@ class _DashboardTabState extends State<DashboardTab>
     }
 
     final teamPlayers = playerProvider.players.where((player) {
-      final isByTeamId = player.teamId != null && player.teamId == defaultTeam.id;
-      final isByPlayerList = defaultTeam.playerIds.contains(player.id);
+      final isByTeamId = player.assignedTeamId == defaultTeam.id;
+      final isByPlayerList = !player.isFreeAgent && defaultTeam.playerIds.contains(player.id);
       return isByTeamId || isByPlayerList;
     }).toList();
 

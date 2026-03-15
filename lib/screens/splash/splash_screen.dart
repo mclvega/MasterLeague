@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../providers/competition_provider.dart';
+import '../../providers/player_provider.dart';
+import '../../providers/settings_provider.dart';
+import '../../providers/team_provider.dart';
+import '../../services/canjes_pdf_cache_service.dart';
 import '../../services/image_cache_service.dart';
+import '../../services/reglamento_pdf_cache_service.dart';
 import '../../utils/app_links.dart';
 import '../home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -13,7 +21,6 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _logoController;
-  late AnimationController _progressController;
   late Animation<double> _logoAnimation;
   late Animation<double> _fadeAnimation;
 
@@ -28,11 +35,6 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(seconds: 2),
       vsync: this,
     );
-    
-    _progressController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
 
     _logoAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _logoController, curve: Curves.elasticOut),
@@ -42,70 +44,44 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _logoController, curve: Curves.easeIn),
     );
 
-    _startInitialization();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _startInitialization();
+    });
   }
 
   @override
   void dispose() {
     _logoController.dispose();
-    _progressController.dispose();
     super.dispose();
   }
 
   Future<void> _startInitialization() async {
-    // Iniciar animación del logo
     _logoController.forward();
 
     try {
-      // Paso 1: Verificar estado del cache
-      setState(() {
-        _statusText = 'Verificando imágenes locales...';
-        _progress = 0.1;
-      });
+      _updateProgress('Cargando configuraciones...', 0.1);
+      await context.read<SettingsProvider>().loadSettings();
+
+      _updateProgress('Preparando recursos locales...', 0.3);
+      await Future.wait([
+        ImageCacheService().initialize(),
+        ReglamentoPdfCacheService().initialize(),
+        CanjesPdfCacheService().initialize(),
+      ]);
+
+      _updateProgress('Importando jugadores...', 0.55);
+      await context.read<PlayerProvider>().loadDataFromJsonUrl();
+
+      _updateProgress('Importando equipos...', 0.72);
+      await context.read<TeamProvider>().loadDataFromJsonUrl();
+
+      _updateProgress('Importando eventos...', 0.88);
+      await context.read<CompetitionProvider>().loadDataFromJsonUrl();
+
+      _updateProgress('¡Listo para jugar! ⚽', 1.0);
       await Future.delayed(const Duration(milliseconds: 500));
 
-      final imageService = ImageCacheService();
-      final hasImages = await imageService.areImagesAvailable();
-
-      if (!hasImages) {
-        // Paso 2: Descargar logo
-        setState(() {
-          _statusText = 'Descargando logo de la aplicación...';
-          _progress = 0.3;
-        });
-        await Future.delayed(const Duration(milliseconds: 300));
-
-        // Paso 3: Descargar fondo
-        setState(() {
-          _statusText = 'Descargando imagen de fondo...';
-          _progress = 0.6;
-        });
-        await Future.delayed(const Duration(milliseconds: 500));
-
-        // Inicializar cache
-        await imageService.initialize();
-      } else {
-        setState(() {
-          _statusText = 'Imágenes encontradas localmente ✓';
-          _progress = 0.8;
-        });
-        await Future.delayed(const Duration(milliseconds: 300));
-      }
-
-      // Paso 4: Completar inicialización
-      setState(() {
-        _statusText = 'Preparando interfaz...';
-        _progress = 0.9;
-      });
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      setState(() {
-        _statusText = '¡Listo para jugar! ⚽';
-        _progress = 1.0;
-      });
-      await Future.delayed(const Duration(milliseconds: 800));
-
-      // Navegar a la pantalla principal
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -115,16 +91,12 @@ class _SplashScreenState extends State<SplashScreen>
       }
 
     } catch (e) {
-      setState(() {
-        _statusText = 'Error de inicialización, continuando...';
-        _progress = 1.0;
-      });
+      _updateProgress('Error de inicialización, continuando...', 1.0);
 
       print('Error en splash: $e');
-      
-      // Esperar un poco antes de continuar
+
       await Future.delayed(const Duration(seconds: 1));
-      
+
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -133,6 +105,14 @@ class _SplashScreenState extends State<SplashScreen>
         );
       }
     }
+  }
+
+  void _updateProgress(String statusText, double progress) {
+    if (!mounted) return;
+    setState(() {
+      _statusText = statusText;
+      _progress = progress;
+    });
   }
 
   @override
@@ -185,7 +165,7 @@ class _SplashScreenState extends State<SplashScreen>
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.network(
-                                AppLinks.appLogoImage,
+                                AppLinks.splashLogoImage,
                                 width: 80,
                                 height: 80,
                                 fit: BoxFit.contain,

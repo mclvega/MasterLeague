@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'screens/home_screen.dart';
 import 'providers/player_provider.dart';
 import 'providers/team_provider.dart';
 import 'providers/competition_provider.dart';
 import 'providers/settings_provider.dart';
+import 'screens/splash/splash_screen.dart';
 import 'utils/theme.dart';
 
 void main() async {
@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'MRRICHAR',
         theme: AppTheme.lightTheme,
-        home: const HomeScreen(), // Ir directo al home sin splash
+        home: const SplashScreen(),
         debugShowCheckedModeBanner: false,
       ),
     );

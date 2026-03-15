@@ -18,10 +18,17 @@ class _PlayersScreenState extends State<PlayersScreen> {
   String? _selectedPosition;
   String? _selectedTeamId;
   String? _selectedCountry;
+  bool? _selectedIsFree;
   double? _selectedMinPrice;
   double? _selectedMaxPrice;
   String _sortBy = 'name';
   bool _sortAscending = true;
+
+  final List<Map<String, dynamic>> _freeStatusOptions = const [
+    {'label': 'Todos', 'value': null},
+    {'label': 'Agentes libres', 'value': true},
+    {'label': 'Con equipo', 'value': false},
+  ];
 
   final List<String> _positions = [
     'Todas',
@@ -45,7 +52,6 @@ class _PlayersScreenState extends State<PlayersScreen> {
     {'label': 'Posicion', 'value': 'position'},
     {'label': 'Precio', 'value': 'price'},
     {'label': 'Media', 'value': 'overall'},
-    {'label': 'Edad', 'value': 'age'},
   ];
 
   @override
@@ -101,6 +107,8 @@ class _PlayersScreenState extends State<PlayersScreen> {
       if (_selectedTeamId != null)
         'Equipo: ${teamProvider.getTeamById(_selectedTeamId!)?.name ?? _selectedTeamId}',
       if (_selectedCountry != null) 'País: $_selectedCountry',
+      if (_selectedIsFree != null)
+        _selectedIsFree! ? 'Estado: Agente libre' : 'Estado: Con equipo',
       if (_selectedMinPrice != null) 'Min: ${_selectedMinPrice!.toStringAsFixed(0)}',
       if (_selectedMaxPrice != null) 'Max: ${_selectedMaxPrice!.toStringAsFixed(0)}',
     ];
@@ -157,6 +165,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
                     _selectedPosition = null;
                     _selectedTeamId = null;
                     _selectedCountry = null;
+                    _selectedIsFree = null;
                     _selectedMinPrice = null;
                     _selectedMaxPrice = null;
                     _sortBy = 'name';
@@ -165,6 +174,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
                   playerProvider.filterByPosition(null);
                   playerProvider.filterByTeam(null);
                   playerProvider.filterByCountry(null);
+                  playerProvider.filterByFreeStatus(null);
                   playerProvider.filterByPriceRange(null, null);
                   playerProvider.sortPlayers(_sortBy, ascending: _sortAscending);
                 },
@@ -187,6 +197,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
     String? tempPosition = _selectedPosition;
     String? tempTeamId = _selectedTeamId;
     String? tempCountry = _selectedCountry;
+    bool? tempIsFree = _selectedIsFree;
     final minController = TextEditingController(
       text: _selectedMinPrice != null ? _selectedMinPrice!.toStringAsFixed(0) : '',
     );
@@ -252,6 +263,24 @@ class _PlayersScreenState extends State<PlayersScreen> {
                       onChanged: (value) {
                         setModalState(() {
                           tempCountry = value == 'Todos' ? null : value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<bool?>(
+                      initialValue: tempIsFree,
+                      decoration: const InputDecoration(labelText: 'Estado'),
+                      items: _freeStatusOptions
+                          .map(
+                            (option) => DropdownMenuItem<bool?>(
+                              value: option['value'] as bool?,
+                              child: Text(option['label'] as String),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setModalState(() {
+                          tempIsFree = value;
                         });
                       },
                     ),
@@ -330,6 +359,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
                                 _selectedPosition = tempPosition;
                                 _selectedTeamId = tempTeamId;
                                 _selectedCountry = tempCountry;
+                                _selectedIsFree = tempIsFree;
                                 _selectedMinPrice = parsedMin;
                                 _selectedMaxPrice = parsedMax;
                                 _sortBy = tempSortBy;
@@ -339,6 +369,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
                               playerProvider.filterByPosition(_selectedPosition);
                               playerProvider.filterByTeam(_selectedTeamId);
                               playerProvider.filterByCountry(_selectedCountry);
+                              playerProvider.filterByFreeStatus(_selectedIsFree);
                               playerProvider.filterByPriceRange(_selectedMinPrice, _selectedMaxPrice);
                               playerProvider.sortPlayers(_sortBy, ascending: _sortAscending);
 

@@ -2,6 +2,7 @@ class AppLinks {
   AppLinks._();
 
   static const String appLogoImage = 'https://mrrichar.netlify.app/Logo%20Liga%20Master_.png';
+  static const String splashLogoImage = 'https://mrrichar.netlify.app/logo.png';
   static const String appBackgroundImage = 'https://mrrichar.netlify.app/fondo-default1.png';
   static const String reglamentoPdf =
       'https://docs.google.com/document/d/12QWI0cEu-wcQbVEP2M6qhk-M5WkQ0rgN/export?format=pdf';

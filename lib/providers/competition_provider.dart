@@ -3,6 +3,7 @@ import '../models/competition.dart';
 import '../models/match_fixture.dart';
 import '../services/file_import_service_simple.dart';
 import '../utils/app_links.dart';
+import '../utils/date_utils.dart';
 
 class CompetitionProvider with ChangeNotifier {
   final List<Competition> _competitions = [];
@@ -21,7 +22,7 @@ class CompetitionProvider with ChangeNotifier {
       if (a.matchday != b.matchday) {
         return a.matchday.compareTo(b.matchday);
       }
-      return a.kickoffDate.compareTo(b.kickoffDate);
+      return AppDateUtils.compareNullableDates(a.kickoffDate, b.kickoffDate);
     });
     return eventFixtures;
   }
@@ -138,9 +139,10 @@ class CompetitionProvider with ChangeNotifier {
             : b.name.compareTo(a.name));
         break;
       case 'startDate':
-        _competitions.sort((a, b) => ascending 
-            ? a.startDate.compareTo(b.startDate) 
-            : b.startDate.compareTo(a.startDate));
+        _competitions.sort((a, b) {
+          final compare = AppDateUtils.compareNullableDates(a.startDate, b.startDate);
+          return ascending ? compare : -compare;
+        });
         break;
       case 'prizePool':
         _competitions.sort((a, b) => ascending 

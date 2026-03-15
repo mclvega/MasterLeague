@@ -4,6 +4,7 @@ import '../../models/player.dart';
 import '../../providers/team_provider.dart';
 import '../../providers/player_provider.dart';
 import '../../models/team.dart';
+import '../../utils/date_utils.dart';
 import '../../utils/number_format_utils.dart';
 import '../../utils/position_utils.dart';
 import '../../utils/theme.dart';
@@ -865,7 +866,6 @@ class _TeamSquadTabState extends State<TeamSquadTab> {
     {'label': 'Posicion', 'value': 'position'},
     {'label': 'Precio', 'value': 'price'},
     {'label': 'Media', 'value': 'overall'},
-    {'label': 'Edad', 'value': 'age'},
   ];
 
   @override
@@ -1271,13 +1271,6 @@ class _TeamSquadTabState extends State<TeamSquadTab> {
   }
 
   String? _formatDate(String? raw) {
-    if (raw == null || raw.trim().isEmpty) return null;
-    final parsed = DateTime.tryParse(raw.trim());
-    if (parsed == null) return raw;
-
-    final day = parsed.day.toString().padLeft(2, '0');
-    final month = parsed.month.toString().padLeft(2, '0');
-    final year = parsed.year.toString();
-    return '$day/$month/$year';
+    return AppDateUtils.formatRawDate(raw);
   }
 }

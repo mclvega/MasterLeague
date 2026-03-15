@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/competition.dart';
 import '../../models/match_fixture.dart';
 import '../../providers/competition_provider.dart';
 import '../../providers/team_provider.dart';
+import '../../utils/date_utils.dart';
 import '../../utils/theme.dart';
 
 class CompetitionFixtureScreen extends StatelessWidget {
@@ -169,13 +169,15 @@ class _FixtureRow extends StatelessWidget {
           const SizedBox(height: 6),
           Row(
             children: [
-              Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
-              const SizedBox(width: 6),
-              Text(
-                DateFormat('dd/MM/yyyy').format(fixture.kickoffDate),
-                style: AppTheme.captionStyle,
-              ),
-              const SizedBox(width: 12),
+              if (AppDateUtils.formatDate(fixture.kickoffDate) != null) ...[
+                Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                const SizedBox(width: 6),
+                Text(
+                  AppDateUtils.formatDate(fixture.kickoffDate)!,
+                  style: AppTheme.captionStyle,
+                ),
+                const SizedBox(width: 12),
+              ],
               Icon(Icons.flag, size: 14, color: Colors.grey[600]),
               const SizedBox(width: 6),
               Text(

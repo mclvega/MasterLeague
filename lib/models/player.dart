@@ -1,11 +1,14 @@
 import 'dart:convert';
 
 class Player {
+  static const Object _undefined = Object();
+
   final String id;
   final String name;
   final String position;
   final double price;
   final String? teamId;
+  final bool isFree;
   final int overall;
   final String club;
   final String nationality;
@@ -21,6 +24,7 @@ class Player {
     required this.position,
     required this.price,
     this.teamId,
+    this.isFree = false,
     required this.overall,
     required this.club,
     required this.nationality,
@@ -32,12 +36,26 @@ class Player {
   });
 
   factory Player.fromMap(Map<String, dynamic> map) {
+    final rawTeamId = map['teamId']?.toString() ?? map['team_id']?.toString();
+    final normalizedTeamId = rawTeamId == null || rawTeamId.trim().isEmpty
+        ? null
+        : rawTeamId.trim();
+    final isFree = _parseBool(
+      map['isFree'] ??
+          map['is_free'] ??
+          map['isfree'] ??
+          map['freeAgent'] ??
+          map['free_agent'],
+      fallback: normalizedTeamId == null,
+    );
+
     return Player(
       id: map['id']?.toString() ?? '',
       name: map['name']?.toString() ?? '',
       position: map['position']?.toString() ?? '',
       price: (map['price'] as num?)?.toDouble() ?? 0.0,
-      teamId: map['teamId']?.toString(),
+      teamId: isFree ? null : normalizedTeamId,
+      isFree: isFree,
       overall: (map['overall'] as num?)?.toInt() ?? 0,
       club: map['club']?.toString() ?? '',
       nationality: map['nationality']?.toString() ?? '',
@@ -55,7 +73,8 @@ class Player {
       'name': name,
       'position': position,
       'price': price,
-      'teamId': teamId,
+      'teamId': assignedTeamId,
+      'isFree': isFreeAgent,
       'overall': overall,
       'club': club,
       'nationality': nationality,
@@ -81,34 +100,50 @@ class Player {
     String? name,
     String? position,
     double? price,
-    String? teamId,
+    Object? teamId = _undefined,
+    bool? isFree,
     int? overall,
     String? club,
     String? nationality,
     int? age,
-    String? contractDuration,
-    String? contractStart,
-    String? contractEnd,
-    String? photoUrl,
+    Object? contractDuration = _undefined,
+    Object? contractStart = _undefined,
+    Object? contractEnd = _undefined,
+    Object? photoUrl = _undefined,
   }) {
     return Player(
       id: id ?? this.id,
       name: name ?? this.name,
       position: position ?? this.position,
       price: price ?? this.price,
-      teamId: teamId ?? this.teamId,
+      teamId: identical(teamId, _undefined) ? this.teamId : teamId as String?,
+      isFree: isFree ?? this.isFree,
       overall: overall ?? this.overall,
       club: club ?? this.club,
       nationality: nationality ?? this.nationality,
       age: age ?? this.age,
-      contractDuration: contractDuration ?? this.contractDuration,
-      contractStart: contractStart ?? this.contractStart,
-      contractEnd: contractEnd ?? this.contractEnd,
-      photoUrl: photoUrl ?? this.photoUrl,
+      contractDuration: identical(contractDuration, _undefined)
+          ? this.contractDuration
+          : contractDuration as String?,
+      contractStart: identical(contractStart, _undefined)
+          ? this.contractStart
+          : contractStart as String?,
+      contractEnd: identical(contractEnd, _undefined)
+          ? this.contractEnd
+          : contractEnd as String?,
+      photoUrl: identical(photoUrl, _undefined) ? this.photoUrl : photoUrl as String?,
     );
   }
 
-  bool get isFreeAgent => teamId == null || teamId!.isEmpty;
+  String? get assignedTeamId {
+    final normalizedTeamId = teamId?.trim();
+    if (isFreeAgent || normalizedTeamId == null || normalizedTeamId.isEmpty) {
+      return null;
+    }
+    return normalizedTeamId;
+  }
+
+  bool get isFreeAgent => isFree || teamId == null || teamId!.trim().isEmpty;
 
   DateTime? get contractStartDate {
     if (contractStart == null || contractStart!.trim().isEmpty) return null;
@@ -132,5 +167,17 @@ class Player {
     if (days != null) return '$days dias';
     if (contractDuration == null || contractDuration!.trim().isEmpty) return null;
     return contractDuration;
+  }
+
+  static bool _parseBool(dynamic value, {required bool fallback}) {
+    if (value == null) return fallback;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+
+    final normalized = value.toString().trim().toLowerCase();
+    if (normalized.isEmpty) return fallback;
+    if ({'1', 'true', 'si', 'sí', 'yes', 'y'}.contains(normalized)) return true;
+    if ({'0', 'false', 'no', 'n'}.contains(normalized)) return false;
+    return fallback;
   }
 }

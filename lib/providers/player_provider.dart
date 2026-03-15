@@ -29,6 +29,7 @@ class PlayerProvider with ChangeNotifier {
   String? _positionFilter;
   String? _teamFilter;
   String? _countryFilter;
+  bool? _isFreeFilter;
   double? _minPriceFilter;
   double? _maxPriceFilter;
 
@@ -44,7 +45,7 @@ class PlayerProvider with ChangeNotifier {
   }
 
   List<Player> getPlayersByTeam(String teamId) {
-    final teamPlayers = _players.where((player) => player.teamId == teamId).toList();
+    final teamPlayers = _players.where((player) => player.assignedTeamId == teamId).toList();
     teamPlayers.sort((a, b) => a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase()));
     return teamPlayers;
   }
@@ -85,13 +86,13 @@ class PlayerProvider with ChangeNotifier {
 
   void assignPlayerToTeam(String playerId, String teamId) {
     final player = _players.firstWhere((p) => p.id == playerId);
-    final updatedPlayer = player.copyWith(teamId: teamId);
+    final updatedPlayer = player.copyWith(teamId: teamId, isFree: false);
     updatePlayer(updatedPlayer);
   }
 
   void releasePlayerFromTeam(String playerId) {
     final player = _players.firstWhere((p) => p.id == playerId);
-    final updatedPlayer = player.copyWith(teamId: null);
+    final updatedPlayer = player.copyWith(teamId: null, isFree: true);
     updatePlayer(updatedPlayer);
   }
 
@@ -121,6 +122,12 @@ class PlayerProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void filterByFreeStatus(bool? isFree) {
+    _isFreeFilter = isFree;
+    _applyFilters();
+    notifyListeners();
+  }
+
   void filterByPriceRange(double? minPrice, double? maxPrice) {
     _minPriceFilter = minPrice;
     _maxPriceFilter = maxPrice;
@@ -140,18 +147,22 @@ class PlayerProvider with ChangeNotifier {
           PositionUtils.normalize(player.position).toLowerCase() == _positionFilter;
 
       final matchesTeam = _teamFilter == null ||
-          ((player.teamId ?? '') == _teamFilter);
+          (player.assignedTeamId == _teamFilter);
 
-        final matchesCountry = _countryFilter == null ||
+      final matchesCountry = _countryFilter == null ||
           player.nationality.toLowerCase() == _countryFilter;
 
-        final matchesMinPrice = _minPriceFilter == null || player.price >= _minPriceFilter!;
-        final matchesMaxPrice = _maxPriceFilter == null || player.price <= _maxPriceFilter!;
+      final matchesFreeStatus = _isFreeFilter == null ||
+          player.isFreeAgent == _isFreeFilter;
 
-        return matchesSearch &&
+      final matchesMinPrice = _minPriceFilter == null || player.price >= _minPriceFilter!;
+      final matchesMaxPrice = _maxPriceFilter == null || player.price <= _maxPriceFilter!;
+
+      return matchesSearch &&
           matchesPosition &&
           matchesTeam &&
           matchesCountry &&
+          matchesFreeStatus &&
           matchesMinPrice &&
           matchesMaxPrice;
     }).toList();
@@ -240,6 +251,7 @@ class PlayerProvider with ChangeNotifier {
         _positionFilter = null;
         _teamFilter = null;
         _countryFilter = null;
+        _isFreeFilter = null;
         _minPriceFilter = null;
         _maxPriceFilter = null;
         _filteredPlayers = List.from(_players);
@@ -279,6 +291,7 @@ class PlayerProvider with ChangeNotifier {
         name: 'Kylian Mbappé',
         position: 'DEL',
         price: 85000000,
+        isFree: true,
         overall: 92,
         club: 'Paris Saint-Germain',
         nationality: 'Francia',
@@ -289,6 +302,7 @@ class PlayerProvider with ChangeNotifier {
         name: 'Lionel Messi',
         position: 'DEL',
         price: 70000000,
+        isFree: true,
         overall: 93,
         club: 'Inter Miami',
         nationality: 'Argentina',
@@ -299,6 +313,7 @@ class PlayerProvider with ChangeNotifier {
         name: 'Erling Haaland',
         position: 'DEL',
         price: 80000000,
+        isFree: true,
         overall: 91,
         club: 'Manchester City',
         nationality: 'Noruega',
@@ -313,6 +328,7 @@ class PlayerProvider with ChangeNotifier {
     _positionFilter = null;
     _teamFilter = null;
     _countryFilter = null;
+    _isFreeFilter = null;
     _minPriceFilter = null;
     _maxPriceFilter = null;
     _filteredPlayers = List.from(_players);

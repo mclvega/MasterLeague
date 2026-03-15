@@ -9,6 +9,7 @@ import '../models/team.dart';
 import '../models/competition.dart';
 import '../models/match_fixture.dart';
 import '../utils/app_links.dart';
+import '../utils/date_utils.dart';
 
 class FileImportService {
   static Future<Map<String, dynamic>> downloadAndLoadExcelData(String url) async {
@@ -169,7 +170,7 @@ class FileImportService {
       if (a.matchday != b.matchday) {
         return a.matchday.compareTo(b.matchday);
       }
-      return a.kickoffDate.compareTo(b.kickoffDate);
+      return AppDateUtils.compareNullableDates(a.kickoffDate, b.kickoffDate);
     });
 
     return fixtures;
@@ -200,6 +201,17 @@ class FileImportService {
       final name = _cell(row, headers, ['name', 'nombre', 'jugador'], fallbackIndex: 1);
       if (name.isEmpty) continue;
 
+      final teamId = _nullable(
+        _cell(row, headers, ['teamid', 'team_id', 'equipoid', 'equipo_id'], fallbackIndex: 4),
+      );
+      final isFreeRaw = _cell(
+        row,
+        headers,
+        ['isfree', 'is_free', 'freeagent', 'free_agent', 'agentelibre', 'agente_libre', 'libre'],
+        fallbackIndex: -1,
+      );
+      final isFree = isFreeRaw.trim().isEmpty ? teamId == null : _toBool(isFreeRaw) || teamId == null;
+
       final contractStart = _nullable(_cell(
         row,
         headers,
@@ -228,7 +240,8 @@ class FileImportService {
           name: name,
           position: _cell(row, headers, ['position', 'posicion', 'pos'], fallbackIndex: 2),
           price: _toDouble(_cell(row, headers, ['price', 'precio', 'valor'], fallbackIndex: 3)),
-          teamId: _nullable(_cell(row, headers, ['teamid', 'team_id', 'equipoid', 'equipo_id'], fallbackIndex: 4)),
+            teamId: isFree ? null : teamId,
+            isFree: isFree,
           overall: _toInt(_cell(row, headers, ['overall', 'media', 'rating'], fallbackIndex: 5)),
           club: _cell(row, headers, ['club', 'equipo', 'team'], fallbackIndex: 6),
           nationality: _cell(row, headers, ['nationality', 'nacionalidad', 'pais'], fallbackIndex: 7),
@@ -366,7 +379,7 @@ class FileImportService {
           status: _parseCompetitionStatus(_cell(row, headers, ['status', 'estado'], fallbackIndex: 3)),
           participantTeamIds: participantTeamIds,
           startDate: _toDate(startDateText),
-          endDate: endDateText.isEmpty ? null : _toDate(endDateText),
+          endDate: _toDate(endDateText),
           prizePool: _toDouble(_cell(row, headers, ['prizepool', 'premio', 'bolsa'], fallbackIndex: 7)),
           description: _nullable(_cell(row, headers, ['description', 'descripcion'], fallbackIndex: 8)),
           rules: rules,
@@ -417,9 +430,8 @@ class FileImportService {
     return _toDouble(input).round();
   }
 
-  static DateTime _toDate(String input) {
-    final parsed = DateTime.tryParse(input);
-    return parsed ?? DateTime.now();
+  static DateTime? _toDate(String input) {
+    return AppDateUtils.parseNullableDate(input);
   }
 
   static String? _computeContractDuration(String? start, String? end) {

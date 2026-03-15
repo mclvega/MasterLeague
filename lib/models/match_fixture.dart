@@ -6,7 +6,7 @@ class MatchFixture {
   final String awayTeamId;
   final int? homeGoals;
   final int? awayGoals;
-  final DateTime kickoffDate;
+  final DateTime? kickoffDate;
   final String status;
   final String? venue;
   final String? notes;
@@ -36,11 +36,18 @@ class MatchFixture {
       awayTeamId: (map['awayTeamId'] ?? map['away_team_id'] ?? '').toString(),
       homeGoals: _toInt(map['homeGoals'] ?? map['home_goals']),
       awayGoals: _toInt(map['awayGoals'] ?? map['away_goals']),
-      kickoffDate: DateTime.tryParse((map['kickoffDate'] ?? map['kickoff_date'] ?? '').toString()) ?? DateTime.now(),
+      kickoffDate: _toDate(map['kickoffDate'] ?? map['kickoff_date']),
       status: (map['status'] ?? '').toString(),
       venue: _toNullableString(map['venue']),
       notes: _toNullableString(map['notes']),
     );
+  }
+
+  static DateTime? _toDate(dynamic value) {
+    if (value == null) return null;
+    final raw = value.toString().trim();
+    if (raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
   }
 
   static int? _toInt(dynamic value) {
