@@ -936,8 +936,8 @@ class _TeamSquadTabState extends State<TeamSquadTab> {
                     final contractDuration = player.contractDurationFormatted;
 
                     final subtitle = StringBuffer('${player.club} • OVR ${player.overall}');
-                    if (contractPeriod != null || contractDuration != null) {
-                      subtitle.write('\nContrato: ${contractPeriod ?? 'Sin fechas'}');
+                    if (contractPeriod != null) {
+                      subtitle.write('\nContrato: $contractPeriod');
                       if (contractDuration != null) {
                         subtitle.write(' • $contractDuration');
                       }

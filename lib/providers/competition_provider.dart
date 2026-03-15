@@ -164,6 +164,20 @@ class CompetitionProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void applyImportedData(
+    List<Competition> importedCompetitions,
+    List<MatchFixture> importedFixtures,
+  ) {
+    _competitions
+      ..clear()
+      ..addAll(importedCompetitions);
+    _fixtures
+      ..clear()
+      ..addAll(importedFixtures);
+    _sortCompetitionsAlphabetically();
+    notifyListeners();
+  }
+
   Future<void> loadDataFromJsonUrl() async {
     // Google Sheets URL (se exporta automaticamente a Excel)
     final String excelUrl = AppLinks.masterLeagueExcelExport;
@@ -180,9 +194,7 @@ class CompetitionProvider with ChangeNotifier {
 
       final List<Competition> importedCompetitions = data['competitions'] ?? [];
       final List<MatchFixture> importedFixtures = data['fixtures'] ?? [];
-      _competitions.addAll(importedCompetitions);
-      _fixtures.addAll(importedFixtures);
-      _sortCompetitionsAlphabetically();
+      applyImportedData(importedCompetitions, importedFixtures);
 
       if (_competitions.isEmpty) {
         setError('No se encontraron eventos en los datos');

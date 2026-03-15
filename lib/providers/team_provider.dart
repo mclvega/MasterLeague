@@ -116,6 +116,15 @@ class TeamProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> applyImportedTeams(List<Team> importedTeams) async {
+    _teams
+      ..clear()
+      ..addAll(importedTeams);
+    _sortTeamsAlphabetically();
+    await saveTeamsToCache(_teams);
+    notifyListeners();
+  }
+
   Future<void> loadDataFromJsonUrl() async {
     // Google Sheets URL (se exporta automaticamente a Excel)
     final String excelUrl = AppLinks.masterLeagueExcelExport;
@@ -135,11 +144,7 @@ class TeamProvider with ChangeNotifier {
         
         // Load teams
         List<Team> importedTeams = data['teams'] ?? [];
-        _teams.addAll(importedTeams);
-        _sortTeamsAlphabetically();
-        
-        // Guardar en cache local
-        await saveTeamsToCache(_teams);
+        await applyImportedTeams(importedTeams);
         
         print('✅ Equipos cargados: ${importedTeams.length}');
         

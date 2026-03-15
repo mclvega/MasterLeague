@@ -17,6 +17,7 @@ import 'players/players_screen.dart';
 import 'teams/teams_screen.dart';
 import 'competitions/competitions_screen.dart';
 import 'settings/settings_screen.dart';
+import 'splash/splash_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -63,14 +64,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 IconButton(
                   icon: const Icon(Icons.refresh, color: Colors.white),
                   onPressed: () async {
-                    await Future.wait([
-                      context.read<PlayerProvider>().loadDataFromJsonUrl(),
-                      context.read<TeamProvider>().loadDataFromJsonUrl(),
-                      context.read<CompetitionProvider>().loadDataFromJsonUrl(),
-                      ImageCacheService().updateImages(),
-                      ReglamentoPdfCacheService().updatePdf(),
-                      CanjesPdfCacheService().updatePdf(),
-                    ]);
+                    if (!mounted) return;
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (context) => const SplashScreen(),
+                      ),
+                    );
                   },
                   tooltip: 'Recargar Datos',
                 ),

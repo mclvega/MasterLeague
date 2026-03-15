@@ -155,6 +155,8 @@ class Player {
     return DateTime.tryParse(contractEnd!.trim());
   }
 
+  bool get hasContractDates => contractStartDate != null || contractEndDate != null;
+
   int? get contractDurationDays {
     final start = contractStartDate;
     final end = contractEndDate;
@@ -163,6 +165,7 @@ class Player {
   }
 
   String? get contractDurationFormatted {
+    if (!hasContractDates) return null;
     final days = contractDurationDays;
     if (days != null) return '$days dias';
     if (contractDuration == null || contractDuration!.trim().isEmpty) return null;

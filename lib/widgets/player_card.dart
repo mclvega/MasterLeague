@@ -331,6 +331,7 @@ class PlayerDetailsScreen extends StatelessWidget {
                       : null;
                   final formattedStart = AppDateUtils.formatRawDate(player.contractStart);
                   final formattedEnd = AppDateUtils.formatRawDate(player.contractEnd);
+                  final formattedDuration = player.contractDurationFormatted;
 
                   if (team != null) {
                     return Container(
@@ -359,9 +360,7 @@ class PlayerDetailsScreen extends StatelessWidget {
                             'Propietario: ${team.ownerName}',
                             style: AppTheme.captionStyle,
                           ),
-                          if (player.contractDuration != null ||
-                              formattedStart != null ||
-                              formattedEnd != null) ...[
+                          if (player.hasContractDates) ...[
                             const SizedBox(height: 10),
                             const Divider(height: 1),
                             const SizedBox(height: 10),
@@ -372,8 +371,8 @@ class PlayerDetailsScreen extends StatelessWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            if (player.contractDuration != null)
-                              Text('Duración: ${player.contractDuration}', style: AppTheme.captionStyle),
+                            if (formattedDuration != null)
+                              Text('Duración: $formattedDuration', style: AppTheme.captionStyle),
                             if (formattedStart != null)
                               Text('Inicio: $formattedStart', style: AppTheme.captionStyle),
                             if (formattedEnd != null)

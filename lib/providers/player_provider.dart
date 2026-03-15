@@ -23,11 +23,13 @@ class PlayerProvider with ChangeNotifier {
 
   final List<Player> _players = [];
   List<Player> _filteredPlayers = [];
+  List<String> _clubs = [];
   bool _isLoading = false;
   String? _error;
   String _searchQuery = '';
   String? _positionFilter;
   String? _teamFilter;
+  String? _clubFilter;
   String? _countryFilter;
   bool? _isFreeFilter;
   double? _minPriceFilter;
@@ -35,6 +37,7 @@ class PlayerProvider with ChangeNotifier {
 
   List<Player> get players => _players;
   List<Player> get filteredPlayers => _filteredPlayers;
+  List<String> get clubs => _clubs;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -63,7 +66,8 @@ class PlayerProvider with ChangeNotifier {
   void addPlayer(Player player) {
     _players.add(player);
     _sortPlayersAlphabetically();
-    _filteredPlayers = List.from(_players);
+    _rebuildClubs();
+    _applyFilters();
     notifyListeners();
   }
 
@@ -72,7 +76,8 @@ class PlayerProvider with ChangeNotifier {
     if (index != -1) {
       _players[index] = updatedPlayer;
       _sortPlayersAlphabetically();
-      _filteredPlayers = List.from(_players);
+      _rebuildClubs();
+      _applyFilters();
       notifyListeners();
     }
   }
@@ -80,7 +85,8 @@ class PlayerProvider with ChangeNotifier {
   void removePlayer(String playerId) {
     _players.removeWhere((player) => player.id == playerId);
     _sortPlayersAlphabetically();
-    _filteredPlayers = List.from(_players);
+    _rebuildClubs();
+    _applyFilters();
     notifyListeners();
   }
 
@@ -112,6 +118,15 @@ class PlayerProvider with ChangeNotifier {
 
   void filterByTeam(String? teamId) {
     _teamFilter = (teamId == null || teamId.isEmpty) ? null : teamId;
+    _applyFilters();
+    notifyListeners();
+  }
+
+  void filterByClub(String? club) {
+    final normalizedClub = club?.trim();
+    _clubFilter = (normalizedClub == null || normalizedClub.isEmpty)
+        ? null
+        : normalizedClub.toLowerCase();
     _applyFilters();
     notifyListeners();
   }
@@ -149,6 +164,9 @@ class PlayerProvider with ChangeNotifier {
       final matchesTeam = _teamFilter == null ||
           (player.assignedTeamId == _teamFilter);
 
+        final matchesClub = _clubFilter == null ||
+          player.club.trim().toLowerCase() == _clubFilter;
+
       final matchesCountry = _countryFilter == null ||
           player.nationality.toLowerCase() == _countryFilter;
 
@@ -161,12 +179,27 @@ class PlayerProvider with ChangeNotifier {
       return matchesSearch &&
           matchesPosition &&
           matchesTeam &&
+          matchesClub &&
           matchesCountry &&
           matchesFreeStatus &&
           matchesMinPrice &&
           matchesMaxPrice;
     }).toList();
     _sortFilteredPlayersAlphabetically();
+  }
+
+  void _rebuildClubs() {
+    final uniqueClubs = <String, String>{};
+
+    for (final player in _players) {
+      final club = player.club.trim();
+      if (club.isEmpty) continue;
+
+      uniqueClubs.putIfAbsent(club.toLowerCase(), () => club);
+    }
+
+    _clubs = uniqueClubs.values.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
   }
 
   void _sortPlayersAlphabetically() {
@@ -225,6 +258,24 @@ class PlayerProvider with ChangeNotifier {
     await loadDataFromJsonUrl();
   }
 
+  void applyImportedPlayers(List<Player> importedPlayers) {
+    _players
+      ..clear()
+      ..addAll(importedPlayers);
+    _sortPlayersAlphabetically();
+    _searchQuery = '';
+    _positionFilter = null;
+    _teamFilter = null;
+    _clubFilter = null;
+    _countryFilter = null;
+    _isFreeFilter = null;
+    _minPriceFilter = null;
+    _maxPriceFilter = null;
+    _rebuildClubs();
+    _filteredPlayers = List.from(_players);
+    notifyListeners();
+  }
+
   Future<void> loadDataFromJsonUrl() async {
     // Google Sheets URL (se exporta automaticamente a Excel)
     final String excelUrl = AppLinks.masterLeagueExcelExport;
@@ -245,16 +296,7 @@ class PlayerProvider with ChangeNotifier {
         
         // Load players
         List<Player> importedPlayers = data['players'] ?? [];
-        _players.addAll(importedPlayers);
-        _sortPlayersAlphabetically();
-        _searchQuery = '';
-        _positionFilter = null;
-        _teamFilter = null;
-        _countryFilter = null;
-        _isFreeFilter = null;
-        _minPriceFilter = null;
-        _maxPriceFilter = null;
-        _filteredPlayers = List.from(_players);
+        applyImportedPlayers(importedPlayers);
         
         print('✅ Carga exitosa: ${importedPlayers.length} jugadores');
         
@@ -327,10 +369,12 @@ class PlayerProvider with ChangeNotifier {
     _searchQuery = '';
     _positionFilter = null;
     _teamFilter = null;
+    _clubFilter = null;
     _countryFilter = null;
     _isFreeFilter = null;
     _minPriceFilter = null;
     _maxPriceFilter = null;
+    _rebuildClubs();
     _filteredPlayers = List.from(_players);
     
     print('Datos de emergencia cargados: ${_players.length} jugadores');
@@ -339,6 +383,7 @@ class PlayerProvider with ChangeNotifier {
   void clearPlayers() {
     _players.clear();
     _filteredPlayers.clear();
+    _clubs = [];
     notifyListeners();
   }
 }

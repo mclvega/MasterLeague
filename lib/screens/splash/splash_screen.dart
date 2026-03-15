@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:master_league/utils/theme.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/competition_provider.dart';
@@ -6,6 +7,7 @@ import '../../providers/player_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/team_provider.dart';
 import '../../services/canjes_pdf_cache_service.dart';
+import '../../services/file_import_service_simple.dart';
 import '../../services/image_cache_service.dart';
 import '../../services/reglamento_pdf_cache_service.dart';
 import '../../utils/app_links.dart';
@@ -24,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _logoAnimation;
   late Animation<double> _fadeAnimation;
 
-  String _statusText = 'Iniciando Master League...';
+  String _statusText = 'Iniciando...';
   double _progress = 0.0;
 
   @override
@@ -41,7 +43,10 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _logoController, curve: Curves.easeIn),
+      CurvedAnimation(
+        parent: _logoController,
+        curve: const Interval(0.15, 0.95, curve: Curves.easeOutCubic),
+      ),
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -61,25 +66,41 @@ class _SplashScreenState extends State<SplashScreen>
 
     try {
       _updateProgress('Cargando configuraciones...', 0.1);
+      await _yieldToUi();
       await context.read<SettingsProvider>().loadSettings();
 
       _updateProgress('Preparando recursos locales...', 0.3);
+      await _yieldToUi();
       await Future.wait([
         ImageCacheService().initialize(),
         ReglamentoPdfCacheService().initialize(),
         CanjesPdfCacheService().initialize(),
       ]);
 
-      _updateProgress('Importando jugadores...', 0.55);
-      await context.read<PlayerProvider>().loadDataFromJsonUrl();
+      _updateProgress('Descargando datos...', 0.55);
+      await _yieldToUi();
+      final data = await FileImportService.downloadAndLoadExcelData(
+        AppLinks.masterLeagueExcelExport,
+      );
 
-      _updateProgress('Importando equipos...', 0.72);
-      await context.read<TeamProvider>().loadDataFromJsonUrl();
+      final playerProvider = context.read<PlayerProvider>();
+      final teamProvider = context.read<TeamProvider>();
+      final competitionProvider = context.read<CompetitionProvider>();
 
-      _updateProgress('Importando eventos...', 0.88);
-      await context.read<CompetitionProvider>().loadDataFromJsonUrl();
+      playerProvider.applyImportedPlayers(List.of(data['players'] ?? const []));
 
-      _updateProgress('¡Listo para jugar! ⚽', 1.0);
+      _updateProgress('Actualizando equipos...', 0.72);
+      await _yieldToUi();
+      await teamProvider.applyImportedTeams(List.of(data['teams'] ?? const []));
+
+      _updateProgress('Actualizando eventos...', 0.88);
+      await _yieldToUi();
+      competitionProvider.applyImportedData(
+        List.of(data['competitions'] ?? const []),
+        List.of(data['fixtures'] ?? const []),
+      );
+
+      _updateProgress('Finalizando...', 1.0);
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (mounted) {
@@ -91,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen>
       }
 
     } catch (e) {
-      _updateProgress('Error de inicialización, continuando...', 1.0);
+      _updateProgress('Continuando...', 1.0);
 
       print('Error en splash: $e');
 
@@ -115,18 +136,22 @@ class _SplashScreenState extends State<SplashScreen>
     });
   }
 
+  Future<void> _yieldToUi() async {
+    await Future<void>.delayed(const Duration(milliseconds: 16));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1976D2),
+      backgroundColor: AppTheme.primaryColor,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF1976D2),
-              Color(0xFF1565C0),
+              AppTheme.primaryColor,
+              AppTheme.primaryColor,
             ],
           ),
         ),
@@ -178,7 +203,7 @@ class _SplashScreenState extends State<SplashScreen>
                                       value: loadingProgress.expectedTotalBytes != null
                                           ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
                                           : null,
-                                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1976D2)),
+                                      valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
                                       strokeWidth: 2,
                                     ),
                                   );
@@ -187,7 +212,7 @@ class _SplashScreenState extends State<SplashScreen>
                                   return Icon(
                                     Icons.sports_soccer,
                                     size: 40,
-                                    color: Color(0xFF1976D2),
+                                    color: AppTheme.primaryColor,
                                   );
                                 },
                               ),
@@ -276,15 +301,26 @@ class _SplashScreenState extends State<SplashScreen>
 
                     const SizedBox(height: 16),
 
-                    // Texto de estado
+                    // Indicador de carga
+                    const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
+                      duration: const Duration(milliseconds: 220),
                       child: Text(
                         _statusText,
                         key: ValueKey(_statusText),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           color: Colors.white70,
                           fontWeight: FontWeight.w500,
                         ),

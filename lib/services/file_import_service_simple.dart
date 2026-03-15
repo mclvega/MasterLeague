@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:http/http.dart' as http;
@@ -33,17 +34,12 @@ class FileImportService {
         // Guardar en archivo local
         final directory = await getApplicationDocumentsDirectory();
         final file = File('${directory.path}/master_league_data.xlsx');
-        await file.writeAsBytes(response.bodyBytes);
+        final parsedMaps = await Isolate.run(
+          () => _persistAndParseExcel(response.bodyBytes, file.path),
+        );
         print('💾 Guardado en: ${file.path}');
 
-        final parsed = _parseExcelBytes(response.bodyBytes);
-        
-        return {
-          'players': parsed['players']!,
-          'teams': parsed['teams']!,
-          'competitions': parsed['competitions']!,
-          'fixtures': parsed['fixtures']!,
-        };
+        return _hydrateParsedData(parsedMaps);
       } else {
         throw Exception('❌ Error HTTP descargando Excel: ${response.statusCode}');
       }
@@ -58,14 +54,9 @@ class FileImportService {
         if (await file.exists()) {
           print('📂 Cargando Excel desde archivo local...');
           final bytes = await file.readAsBytes();
-          final parsed = _parseExcelBytes(bytes);
-          
-          return {
-            'players': parsed['players']!,
-            'teams': parsed['teams']!,
-            'competitions': parsed['competitions']!,
-            'fixtures': parsed['fixtures']!,
-          };
+          final parsedMaps = await Isolate.run(() => _parseExcelBytesAsMaps(bytes));
+
+          return _hydrateParsedData(parsedMaps);
         }
       } catch (localError) {
         print('❌ Error con Excel local: $localError');
@@ -78,6 +69,65 @@ class FileImportService {
   // Compatibilidad con llamadas existentes
   static Future<Map<String, dynamic>> downloadAndLoadJsonData(String url) {
     return downloadAndLoadExcelData(url);
+  }
+
+  static Future<Map<String, List<Map<String, dynamic>>>> _persistAndParseExcel(
+    Uint8List bytes,
+    String filePath,
+  ) async {
+    final file = File(filePath);
+    await file.writeAsBytes(bytes, flush: true);
+    return _parseExcelBytesAsMaps(bytes);
+  }
+
+  static Map<String, dynamic> _hydrateParsedData(
+    Map<String, List<Map<String, dynamic>>> parsedMaps,
+  ) {
+    return {
+      'players': parsedMaps['players']!.map(Player.fromMap).toList(growable: false),
+      'teams': parsedMaps['teams']!.map(Team.fromMap).toList(growable: false),
+      'competitions': parsedMaps['competitions']!
+          .map(Competition.fromMap)
+          .toList(growable: false),
+      'fixtures': parsedMaps['fixtures']!.map(MatchFixture.fromMap).toList(growable: false),
+    };
+  }
+
+  static Map<String, List<Map<String, dynamic>>> _parseExcelBytesAsMaps(Uint8List bytes) {
+    final parsed = _parseExcelBytes(bytes);
+
+    return {
+      'players': parsed['players']!
+          .cast<Player>()
+          .map((player) => player.toMap())
+          .toList(growable: false),
+      'teams': parsed['teams']!
+          .cast<Team>()
+          .map((team) => team.toMap())
+          .toList(growable: false),
+      'competitions': parsed['competitions']!
+          .cast<Competition>()
+          .map((competition) => competition.toMap())
+          .toList(growable: false),
+      'fixtures': parsed['fixtures']!
+          .cast<MatchFixture>()
+          .map(
+            (fixture) => {
+              'id': fixture.id,
+              'eventId': fixture.eventId,
+              'matchday': fixture.matchday,
+              'homeTeamId': fixture.homeTeamId,
+              'awayTeamId': fixture.awayTeamId,
+              'homeGoals': fixture.homeGoals,
+              'awayGoals': fixture.awayGoals,
+              'kickoffDate': fixture.kickoffDate?.toIso8601String(),
+              'status': fixture.status,
+              'venue': fixture.venue,
+              'notes': fixture.notes,
+            },
+          )
+          .toList(growable: false),
+    };
   }
 
   static String _toGoogleSheetsXlsxExportUrl(String url) {

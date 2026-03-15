@@ -17,6 +17,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
   final TextEditingController _searchController = TextEditingController();
   String? _selectedPosition;
   String? _selectedTeamId;
+  String? _selectedClub;
   String? _selectedCountry;
   bool? _selectedIsFree;
   double? _selectedMinPrice;
@@ -95,6 +96,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
   }
 
   Widget _buildSearchAndFilters(PlayerProvider playerProvider, TeamProvider teamProvider) {
+    final clubs = playerProvider.clubs;
     final countries = playerProvider.players
         .map((p) => p.nationality.trim())
         .where((n) => n.isNotEmpty)
@@ -106,6 +108,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
       if (_selectedPosition != null) 'Posición: $_selectedPosition',
       if (_selectedTeamId != null)
         'Equipo: ${teamProvider.getTeamById(_selectedTeamId!)?.name ?? _selectedTeamId}',
+      if (_selectedClub != null) 'Club: $_selectedClub',
       if (_selectedCountry != null) 'País: $_selectedCountry',
       if (_selectedIsFree != null)
         _selectedIsFree! ? 'Estado: Agente libre' : 'Estado: Con equipo',
@@ -149,7 +152,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Colors.white),
                   ),
-                  onPressed: () => _openFiltersModal(playerProvider, teamProvider, countries),
+                  onPressed: () => _openFiltersModal(playerProvider, teamProvider, clubs, countries),
                   icon: const Icon(Icons.tune),
                   label: Text(
                     activeFilters.isEmpty ? 'Filtros' : 'Filtros (${activeFilters.length})',
@@ -164,6 +167,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
                   setState(() {
                     _selectedPosition = null;
                     _selectedTeamId = null;
+                    _selectedClub = null;
                     _selectedCountry = null;
                     _selectedIsFree = null;
                     _selectedMinPrice = null;
@@ -173,6 +177,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
                   });
                   playerProvider.filterByPosition(null);
                   playerProvider.filterByTeam(null);
+                  playerProvider.filterByClub(null);
                   playerProvider.filterByCountry(null);
                   playerProvider.filterByFreeStatus(null);
                   playerProvider.filterByPriceRange(null, null);
@@ -190,12 +195,14 @@ class _PlayersScreenState extends State<PlayersScreen> {
   Future<void> _openFiltersModal(
     PlayerProvider playerProvider,
     TeamProvider teamProvider,
+    List<String> clubs,
     List<String> countries,
   ) async {
     String tempSortBy = _sortBy;
     bool tempSortAscending = _sortAscending;
     String? tempPosition = _selectedPosition;
     String? tempTeamId = _selectedTeamId;
+    String? tempClub = _selectedClub;
     String? tempCountry = _selectedCountry;
     bool? tempIsFree = _selectedIsFree;
     final minController = TextEditingController(
@@ -249,6 +256,20 @@ class _PlayersScreenState extends State<PlayersScreen> {
                       onChanged: (value) {
                         setModalState(() {
                           tempTeamId = value == 'Todos' ? null : value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: tempClub ?? 'Todos',
+                      decoration: const InputDecoration(labelText: 'Club'),
+                      items: [
+                        const DropdownMenuItem(value: 'Todos', child: Text('Todos')),
+                        ...clubs.map((club) => DropdownMenuItem(value: club, child: Text(club))),
+                      ],
+                      onChanged: (value) {
+                        setModalState(() {
+                          tempClub = value == 'Todos' ? null : value;
                         });
                       },
                     ),
@@ -358,6 +379,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
                               setState(() {
                                 _selectedPosition = tempPosition;
                                 _selectedTeamId = tempTeamId;
+                                _selectedClub = tempClub;
                                 _selectedCountry = tempCountry;
                                 _selectedIsFree = tempIsFree;
                                 _selectedMinPrice = parsedMin;
@@ -368,6 +390,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
 
                               playerProvider.filterByPosition(_selectedPosition);
                               playerProvider.filterByTeam(_selectedTeamId);
+                              playerProvider.filterByClub(_selectedClub);
                               playerProvider.filterByCountry(_selectedCountry);
                               playerProvider.filterByFreeStatus(_selectedIsFree);
                               playerProvider.filterByPriceRange(_selectedMinPrice, _selectedMaxPrice);
