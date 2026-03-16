@@ -65,9 +65,11 @@ class _SplashScreenState extends State<SplashScreen>
     _logoController.forward();
 
     try {
+      final settingsProvider = context.read<SettingsProvider>();
+
       _updateProgress('Cargando configuraciones...', 0.1);
       await _yieldToUi();
-      await context.read<SettingsProvider>().loadSettings();
+      await settingsProvider.loadSettings();
 
       _updateProgress('Preparando recursos locales...', 0.3);
       await _yieldToUi();
@@ -86,6 +88,10 @@ class _SplashScreenState extends State<SplashScreen>
       final playerProvider = context.read<PlayerProvider>();
       final teamProvider = context.read<TeamProvider>();
       final competitionProvider = context.read<CompetitionProvider>();
+
+      await settingsProvider.applyRemoteBranding(
+        Map<String, String>.from(data['configurations'] ?? const {}),
+      );
 
       playerProvider.applyImportedPlayers(List.of(data['players'] ?? const []));
 
@@ -142,6 +148,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final settingsProvider = context.watch<SettingsProvider>();
+
     return Scaffold(
       backgroundColor: AppTheme.primaryColor,
       body: Container(
@@ -171,48 +179,34 @@ class _SplashScreenState extends State<SplashScreen>
                       scale: _logoAnimation.value,
                       child: FadeTransition(
                         opacity: _fadeAnimation,
-                        child: Container(
+                        child: SizedBox(
                           width: 120,
                           height: 120,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black26,
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
                           child: Padding(
-                            padding: const EdgeInsets.all(16.0),
+                            padding: const EdgeInsets.all(8.0),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(20),
                               child: Image.network(
-                                AppLinks.splashLogoImage,
-                                width: 80,
-                                height: 80,
+                                settingsProvider.brandingLogoUrl ?? AppLinks.splashLogoImage,
+                                width: 104,
+                                height: 104,
                                 fit: BoxFit.contain,
                                 loadingBuilder: (context, child, loadingProgress) {
                                   if (loadingProgress == null) {
                                     return child;
                                   }
-                                  return Center(
+                                  return const Center(
                                     child: CircularProgressIndicator(
-                                      value: loadingProgress.expectedTotalBytes != null
-                                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                          : null,
-                                      valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                       strokeWidth: 2,
                                     ),
                                   );
                                 },
                                 errorBuilder: (context, error, stackTrace) {
-                                  return Icon(
+                                  return const Icon(
                                     Icons.sports_soccer,
-                                    size: 40,
-                                    color: AppTheme.primaryColor,
+                                    size: 56,
+                                    color: Colors.white,
                                   );
                                 },
                               ),
@@ -232,10 +226,10 @@ class _SplashScreenState extends State<SplashScreen>
                   builder: (context, child) {
                     return Opacity(
                       opacity: _fadeAnimation.value,
-                      child: const Text(
-                        'Liga Master\nMRRICHAR',
+                      child: Text(
+                        settingsProvider.splashTitle,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -261,10 +255,10 @@ class _SplashScreenState extends State<SplashScreen>
                   builder: (context, child) {
                     return Opacity(
                       opacity: _fadeAnimation.value * 0.8,
-                      child: const Text(
-                        'Tu liga de fútbol profesional personalizada',
+                      child: Text(
+                        settingsProvider.splashSubtitle,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 16,
                           color: Colors.white70,
                           fontWeight: FontWeight.w500,

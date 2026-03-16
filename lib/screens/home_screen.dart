@@ -40,6 +40,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settingsProvider = context.watch<SettingsProvider>();
+
     return Scaffold(
       backgroundColor: Colors.transparent, // Fondo transparente para mostrar la imagen
       extendBodyBehindAppBar: false,
@@ -49,8 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
             // Logo de la app
             AppTheme.buildAppLogo(width: 96, height: 96),
             const SizedBox(width: 12),
-            const Expanded(
-              child: Text('MRRICHAR'),
+            Expanded(
+              child: Text(settingsProvider.appTitle),
             ),
           ],
         ),

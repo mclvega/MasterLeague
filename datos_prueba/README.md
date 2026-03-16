@@ -13,6 +13,7 @@ Este directorio contiene la documentación para probar la funcionalidad de impor
   - ⚽ **Agentes Libres** (30 jugadores sin equipo)
   - 🏟️ **Equipos** (20 clubes principales)
   - 🏆 **Competiciones** (20 torneos/ligas)
+  - ⚙️ **Configuraciones** (branding general de la app)
 - **Ventajas**: 
   - ✅ **Acceso en línea** - sin necesidad de archivos locales
   - ✅ **Siempre actualizado** - se lee directamente desde la nube
@@ -73,6 +74,10 @@ Ejemplo de encabezados para la hoja de Equipos (Excel):
 
 ### Competiciones
 - **Competition, Type, Status, Start Date, End Date, Prize Pool, Participants**
+
+### Configuraciones
+- **key**: clave de configuración (`logoUrl`, `appTitle`, `splashTitle`, `splashSubtitle`)
+- **value**: valor aplicado a splash y cabecera principal
 
 ## 🧪 Casos de Prueba Sugeridos
 

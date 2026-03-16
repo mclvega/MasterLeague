@@ -93,13 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           final isDefault = settingsProvider.defaultTeamId == team.id;
                           
                           return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: isDefault ? AppTheme.primaryColor : Colors.grey,
-                              child: Text(
-                                team.name.isNotEmpty ? team.name[0].toUpperCase() : '?',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                              ),
-                            ),
+                            leading: _buildTeamAvatar(team, isDefault),
                             title: Text(
                               team.name,
                               style: TextStyle(
@@ -181,5 +175,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildTeamAvatar(team, bool isDefault) {
+    final logo = _normalizeLogoUrl(team.logoUrl);
+    if (logo != null) {
+      return CircleAvatar(
+        backgroundColor: Colors.white,
+        child: ClipOval(
+          child: Image.network(
+            logo,
+            width: 40,
+            height: 40,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildTeamInitialAvatar(team.name, isDefault),
+          ),
+        ),
+      );
+    }
+
+    return _buildTeamInitialAvatar(team.name, isDefault);
+  }
+
+  Widget _buildTeamInitialAvatar(String teamName, bool isDefault) {
+    return CircleAvatar(
+      backgroundColor: isDefault ? AppTheme.primaryColor : Colors.grey,
+      child: Text(
+        teamName.isNotEmpty ? teamName[0].toUpperCase() : '?',
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  String? _normalizeLogoUrl(String? rawUrl) {
+    if (rawUrl == null) return null;
+    final value = rawUrl.trim();
+    if (value.isEmpty) return null;
+
+    final fileDMatch = RegExp(r'drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)').firstMatch(value);
+    if (fileDMatch != null) {
+      final fileId = fileDMatch.group(1)!;
+      return 'https://drive.google.com/thumbnail?id=$fileId&sz=w200';
+    }
+
+    final idParamMatch = RegExp(r'drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([a-zA-Z0-9_-]+)').firstMatch(value);
+    if (idParamMatch != null) {
+      final fileId = idParamMatch.group(1)!;
+      return 'https://drive.google.com/thumbnail?id=$fileId&sz=w200';
+    }
+
+    return value;
   }
 }

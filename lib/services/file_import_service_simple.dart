@@ -71,7 +71,7 @@ class FileImportService {
     return downloadAndLoadExcelData(url);
   }
 
-  static Future<Map<String, List<Map<String, dynamic>>>> _persistAndParseExcel(
+  static Future<Map<String, dynamic>> _persistAndParseExcel(
     Uint8List bytes,
     String filePath,
   ) async {
@@ -81,19 +81,37 @@ class FileImportService {
   }
 
   static Map<String, dynamic> _hydrateParsedData(
-    Map<String, List<Map<String, dynamic>>> parsedMaps,
+    Map<String, dynamic> parsedMaps,
   ) {
+    final playerMaps = List<Map<String, dynamic>>.from(
+      (parsedMaps['players'] as List<dynamic>? ?? const [])
+          .map((item) => Map<String, dynamic>.from(item as Map)),
+    );
+    final teamMaps = List<Map<String, dynamic>>.from(
+      (parsedMaps['teams'] as List<dynamic>? ?? const [])
+          .map((item) => Map<String, dynamic>.from(item as Map)),
+    );
+    final competitionMaps = List<Map<String, dynamic>>.from(
+      (parsedMaps['competitions'] as List<dynamic>? ?? const [])
+          .map((item) => Map<String, dynamic>.from(item as Map)),
+    );
+    final fixtureMaps = List<Map<String, dynamic>>.from(
+      (parsedMaps['fixtures'] as List<dynamic>? ?? const [])
+          .map((item) => Map<String, dynamic>.from(item as Map)),
+    );
+
     return {
-      'players': parsedMaps['players']!.map(Player.fromMap).toList(growable: false),
-      'teams': parsedMaps['teams']!.map(Team.fromMap).toList(growable: false),
-      'competitions': parsedMaps['competitions']!
+      'players': playerMaps.map(Player.fromMap).toList(growable: false),
+      'teams': teamMaps.map(Team.fromMap).toList(growable: false),
+      'competitions': competitionMaps
           .map(Competition.fromMap)
           .toList(growable: false),
-      'fixtures': parsedMaps['fixtures']!.map(MatchFixture.fromMap).toList(growable: false),
+      'fixtures': fixtureMaps.map(MatchFixture.fromMap).toList(growable: false),
+      'configurations': Map<String, String>.from(parsedMaps['configurations'] ?? const {}),
     };
   }
 
-  static Map<String, List<Map<String, dynamic>>> _parseExcelBytesAsMaps(Uint8List bytes) {
+  static Map<String, dynamic> _parseExcelBytesAsMaps(Uint8List bytes) {
     final parsed = _parseExcelBytes(bytes);
 
     return {
@@ -127,6 +145,7 @@ class FileImportService {
             },
           )
           .toList(growable: false),
+      'configurations': Map<String, String>.from(parsed['configurations'] ?? const {}),
     };
   }
 
@@ -140,7 +159,7 @@ class FileImportService {
     return url;
   }
 
-  static Map<String, List<dynamic>> _parseExcelBytes(Uint8List bytes) {
+  static Map<String, dynamic> _parseExcelBytes(Uint8List bytes) {
     final excel = Excel.decodeBytes(bytes);
     if (excel.tables.isEmpty) {
       throw Exception('El archivo Excel no contiene hojas');
@@ -156,22 +175,30 @@ class FileImportService {
         (sheets.length > 2 ? sheets[2].rows : <List<Data?>>[]);
     final fixturesRows = _findRowsBySheetName(excel, ['fixture', 'fixtures', 'calendario', 'cruces']) ??
       (sheets.length > 3 ? sheets[3].rows : <List<Data?>>[]);
+    final configurationsRows = _findRowsBySheetName(
+          excel,
+          ['configuraciones', 'configuracion', 'settings', 'config'],
+        ) ??
+        <List<Data?>>[];
 
     final players = _parsePlayers(playersRows);
     final teams = _parseTeams(teamsRows);
     final competitions = _parseCompetitions(competitionsRows);
     final fixtures = _parseFixtures(fixturesRows);
+    final configurations = _parseConfigurations(configurationsRows);
 
     print('⚽ Jugadores parseados (hoja 1): ${players.length}');
     print('🏟️ Equipos parseados (hoja 2): ${teams.length}');
     print('🏆 Competiciones parseadas (hoja 3): ${competitions.length}');
     print('🗓️ Partidos fixture parseados: ${fixtures.length}');
+    print('⚙️ Configuraciones parseadas: ${configurations.length}');
 
     return {
       'players': players,
       'teams': teams,
       'competitions': competitions,
       'fixtures': fixtures,
+      'configurations': configurations,
     };
   }
 
@@ -239,6 +266,98 @@ class FileImportService {
 
   static String _normalizeSheetName(String value) {
     return value.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
+
+  static List<String> _normalizeHeaderKeys(List<String> keys) {
+    return keys.map((key) => key.toLowerCase().replaceAll(' ', '')).toList(growable: false);
+  }
+
+  static bool _containsAnyHeader(Map<String, int> headers, List<String> candidates) {
+    final normalizedCandidates = _normalizeHeaderKeys(candidates);
+    return normalizedCandidates.any(headers.containsKey);
+  }
+
+  static Map<String, String> _parseConfigurations(List<List<Data?>> rows) {
+    if (rows.isEmpty) return <String, String>{};
+
+    final configurations = <String, String>{};
+    final headers = _headerMap(rows.first);
+    final hasKeyValueHeaders =
+        _containsAnyHeader(headers, ['clave', 'key', 'configuracion', 'setting']) &&
+        _containsAnyHeader(headers, ['valor', 'value', 'contenido', 'texto']);
+
+    if (hasKeyValueHeaders) {
+      for (var i = 1; i < rows.length; i++) {
+        final row = rows[i];
+        final rawKey = _cell(
+          row,
+          headers,
+          ['clave', 'key', 'configuracion', 'setting'],
+          fallbackIndex: 0,
+        );
+        final rawValue = _cell(
+          row,
+          headers,
+          ['valor', 'value', 'contenido', 'texto'],
+          fallbackIndex: 1,
+        );
+        _storeConfigurationValue(configurations, rawKey, rawValue);
+      }
+    }
+
+    if (rows.length > 1) {
+      final dataRow = rows[1];
+      for (final entry in headers.entries) {
+        if (entry.value < 0 || entry.value >= dataRow.length) continue;
+        final rawValue = (dataRow[entry.value]?.value?.toString() ?? '').trim();
+        _storeConfigurationValue(configurations, entry.key, rawValue);
+      }
+    }
+
+    return configurations;
+  }
+
+  static void _storeConfigurationValue(
+    Map<String, String> configurations,
+    String rawKey,
+    String rawValue,
+  ) {
+    final canonicalKey = _canonicalConfigurationKey(rawKey);
+    final normalizedValue = rawValue.trim();
+    if (canonicalKey == null || normalizedValue.isEmpty) return;
+    configurations[canonicalKey] = normalizedValue;
+  }
+
+  static String? _canonicalConfigurationKey(String rawKey) {
+    final key = rawKey.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+    switch (key) {
+      case 'logo':
+      case 'logourl':
+      case 'urllogo':
+      case 'logoimage':
+      case 'imagelogo':
+      case 'urlimagenlogo':
+        return 'logoUrl';
+      case 'apptitle':
+      case 'tituloapp':
+      case 'nombreapp':
+      case 'titleapp':
+        return 'appTitle';
+      case 'splashtitle':
+      case 'titulosplash':
+      case 'titulo':
+      case 'title':
+      case 'tituloprincipal':
+        return 'splashTitle';
+      case 'splashsubtitle':
+      case 'subtitulosplash':
+      case 'subtitle':
+      case 'subtitulo':
+        return 'splashSubtitle';
+      default:
+        return null;
+    }
   }
 
   static List<Player> _parsePlayers(List<List<Data?>> rows) {

@@ -27,11 +27,15 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TeamProvider()),
         ChangeNotifierProvider(create: (_) => CompetitionProvider()),
       ],
-      child: MaterialApp(
-        title: 'MRRICHAR',
-        theme: AppTheme.lightTheme,
-        home: const SplashScreen(),
-        debugShowCheckedModeBanner: false,
+      child: Consumer<SettingsProvider>(
+        builder: (context, settingsProvider, child) {
+          return MaterialApp(
+            title: settingsProvider.appTitle,
+            theme: AppTheme.lightTheme,
+            home: const SplashScreen(),
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }

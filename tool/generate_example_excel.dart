@@ -15,11 +15,13 @@ void main() {
   const teamsSheet = 'Equipos';
   const eventsSheet = 'Eventos';
   const fixtureSheet = 'Fixture';
+  const configurationsSheet = 'Configuraciones';
 
   excel[playersSheet];
   excel[teamsSheet];
   excel[eventsSheet];
   excel[fixtureSheet];
+  excel[configurationsSheet];
 
   final teamNames = [
     'Real Madrid',
@@ -173,6 +175,8 @@ void main() {
     'notes',
   ];
 
+  final configurationsHeaders = ['key', 'value'];
+
   final playersRows = <List<String>>[];
   final teamsRows = <List<String>>[];
 
@@ -312,6 +316,12 @@ void main() {
   ];
 
   final fixtureRows = <List<String>>[];
+  final configurationsRows = <List<String>>[
+    ['logoUrl', 'https://mrrichar.netlify.app/logo.png'],
+    ['appTitle', 'MRRICHAR'],
+    ['splashTitle', 'Liga Master\nMRRICHAR'],
+    ['splashSubtitle', 'Tu liga de fútbol profesional personalizada'],
+  ];
   var fixtureCounter = 1;
 
   void addFixtureRow({
@@ -441,6 +451,7 @@ void main() {
   writeSheet(teamsSheet, teamsHeaders, teamsRows);
   writeSheet(eventsSheet, eventsHeaders, eventsRows);
   writeSheet(fixtureSheet, fixtureHeaders, fixtureRows);
+  writeSheet(configurationsSheet, configurationsHeaders, configurationsRows);
 
   final output = File('datos_prueba/master_league_ejemplo.xlsx');
   output.parent.createSync(recursive: true);
@@ -459,4 +470,5 @@ void main() {
   stdout.writeln('Jugadores: ${playersRows.length}');
   stdout.writeln('Eventos: ${eventsRows.length}');
   stdout.writeln('Partidos fixture: ${fixtureRows.length}');
+  stdout.writeln('Configuraciones: ${configurationsRows.length}');
 }

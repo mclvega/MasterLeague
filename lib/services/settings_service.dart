@@ -15,6 +15,10 @@ class SettingsService {
   static const String _autoLoadDataKey = 'auto_load_data';
   static const String _offlineModeKey = 'offline_mode';
   static const String _dataSourceUrlKey = 'data_source_url';
+  static const String _brandingLogoUrlKey = 'branding_logo_url';
+  static const String _brandingAppTitleKey = 'branding_app_title';
+  static const String _brandingSplashTitleKey = 'branding_splash_title';
+  static const String _brandingSplashSubtitleKey = 'branding_splash_subtitle';
 
   // === EQUIPO POR DEFECTO ===
 
@@ -102,6 +106,36 @@ class SettingsService {
     print('📴 Modo offline: ${enabled ? 'activado' : 'desactivado'}');
   }
 
+  Future<String?> getBrandingLogoUrl() async {
+    return await _db.getSetting(_brandingLogoUrlKey);
+  }
+
+  Future<String?> getBrandingAppTitle() async {
+    return await _db.getSetting(_brandingAppTitleKey);
+  }
+
+  Future<String?> getBrandingSplashTitle() async {
+    return await _db.getSetting(_brandingSplashTitleKey);
+  }
+
+  Future<String?> getBrandingSplashSubtitle() async {
+    return await _db.getSetting(_brandingSplashSubtitleKey);
+  }
+
+  Future<void> setBrandingConfiguration({
+    String? logoUrl,
+    String? appTitle,
+    String? splashTitle,
+    String? splashSubtitle,
+  }) async {
+    await Future.wait([
+      _setOrDelete(_brandingLogoUrlKey, logoUrl),
+      _setOrDelete(_brandingAppTitleKey, appTitle),
+      _setOrDelete(_brandingSplashTitleKey, splashTitle),
+      _setOrDelete(_brandingSplashSubtitleKey, splashSubtitle),
+    ]);
+  }
+
   // === UTILIDADES ===
 
   /// Obtiene todas las configuraciones como un mapa
@@ -113,6 +147,10 @@ class SettingsService {
       'dataSourceUrl': await getDataSourceUrl(),
       'autoLoadData': (await getAutoLoadData()).toString(),
       'offlineMode': (await getOfflineMode()).toString(),
+      'brandingLogoUrl': await getBrandingLogoUrl(),
+      'brandingAppTitle': await getBrandingAppTitle(),
+      'brandingSplashTitle': await getBrandingSplashTitle(),
+      'brandingSplashSubtitle': await getBrandingSplashSubtitle(),
     };
   }
 
@@ -125,6 +163,10 @@ class SettingsService {
       _db.deleteSetting(_autoLoadDataKey),
       _db.deleteSetting(_offlineModeKey),
       _db.deleteSetting(_dataSourceUrlKey),
+      _db.deleteSetting(_brandingLogoUrlKey),
+      _db.deleteSetting(_brandingAppTitleKey),
+      _db.deleteSetting(_brandingSplashTitleKey),
+      _db.deleteSetting(_brandingSplashSubtitleKey),
     ]);
     print('🔄 Todas las configuraciones han sido restablecidas');
   }
@@ -164,10 +206,31 @@ class SettingsService {
             case 'offlineMode':
               await _db.setSetting(_offlineModeKey, entry.value.toString());
               break;
+            case 'brandingLogoUrl':
+              await _setOrDelete(_brandingLogoUrlKey, entry.value?.toString());
+              break;
+            case 'brandingAppTitle':
+              await _setOrDelete(_brandingAppTitleKey, entry.value?.toString());
+              break;
+            case 'brandingSplashTitle':
+              await _setOrDelete(_brandingSplashTitleKey, entry.value?.toString());
+              break;
+            case 'brandingSplashSubtitle':
+              await _setOrDelete(_brandingSplashSubtitleKey, entry.value?.toString());
+              break;
           }
         }
       }
       print('📥 Configuraciones importadas exitosamente');
     }
+  }
+
+  Future<void> _setOrDelete(String key, String? value) async {
+    final normalized = value?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      await _db.deleteSetting(key);
+      return;
+    }
+    await _db.setSetting(key, normalized);
   }
 }

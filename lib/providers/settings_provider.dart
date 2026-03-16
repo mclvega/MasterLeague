@@ -3,6 +3,10 @@ import '../models/team.dart';
 import '../services/settings_service.dart';
 
 class SettingsProvider with ChangeNotifier {
+  static const String defaultAppTitle = 'MRRICHAR';
+  static const String defaultSplashTitle = 'Liga Master\nMRRICHAR';
+  static const String defaultSplashSubtitle = 'Loki Hijo Mio';
+
   final SettingsService _settingsService = SettingsService();
   
   // Estados
@@ -16,6 +20,10 @@ class SettingsProvider with ChangeNotifier {
   String? _dataSourceUrl;
   bool _autoLoadData = false;
   bool _offlineMode = false;
+  String? _brandingLogoUrl;
+  String? _brandingAppTitle;
+  String? _brandingSplashTitle;
+  String? _brandingSplashSubtitle;
 
   // Getters
   bool get isLoading => _isLoading;
@@ -26,6 +34,10 @@ class SettingsProvider with ChangeNotifier {
   String? get dataSourceUrl => _dataSourceUrl;
   bool get autoLoadData => _autoLoadData;
   bool get offlineMode => _offlineMode;
+  String? get brandingLogoUrl => _normalizedOrNull(_brandingLogoUrl);
+  String get appTitle => _normalizedOrNull(_brandingAppTitle) ?? defaultAppTitle;
+  String get splashTitle => _normalizedOrNull(_brandingSplashTitle) ?? defaultSplashTitle;
+  String get splashSubtitle => _normalizedOrNull(_brandingSplashSubtitle) ?? defaultSplashSubtitle;
   bool get hasDefaultTeam => _defaultTeamId != null && _defaultTeamId!.isNotEmpty;
 
   void setLoading(bool loading) {
@@ -55,6 +67,10 @@ class SettingsProvider with ChangeNotifier {
       _dataSourceUrl = settings['dataSourceUrl'];
       _autoLoadData = settings['autoLoadData'] == 'true';
       _offlineMode = settings['offlineMode'] == 'true';
+      _brandingLogoUrl = settings['brandingLogoUrl'];
+      _brandingAppTitle = settings['brandingAppTitle'];
+      _brandingSplashTitle = settings['brandingSplashTitle'];
+      _brandingSplashSubtitle = settings['brandingSplashSubtitle'];
       
       print('⚙️ Configuraciones cargadas');
     } catch (e) {
@@ -163,6 +179,30 @@ class SettingsProvider with ChangeNotifier {
     }
   }
 
+  Future<void> applyRemoteBranding(Map<String, String> configuration) async {
+    final logoUrl = _normalizedOrNull(configuration['logoUrl']);
+    final appTitle = _normalizedOrNull(configuration['appTitle']);
+    final splashTitle = _normalizedOrNull(configuration['splashTitle']);
+    final splashSubtitle = _normalizedOrNull(configuration['splashSubtitle']);
+
+    try {
+      await _settingsService.setBrandingConfiguration(
+        logoUrl: logoUrl,
+        appTitle: appTitle,
+        splashTitle: splashTitle,
+        splashSubtitle: splashSubtitle,
+      );
+      _brandingLogoUrl = logoUrl;
+      _brandingAppTitle = appTitle;
+      _brandingSplashTitle = splashTitle;
+      _brandingSplashSubtitle = splashSubtitle;
+      notifyListeners();
+    } catch (e) {
+      _error = 'Error aplicando configuraciones remotas: $e';
+      notifyListeners();
+    }
+  }
+
   // === UTILIDADES ===
 
   /// Resetea todas las configuraciones
@@ -178,6 +218,10 @@ class SettingsProvider with ChangeNotifier {
       _dataSourceUrl = null;
       _autoLoadData = false;
       _offlineMode = false;
+      _brandingLogoUrl = null;
+      _brandingAppTitle = null;
+      _brandingSplashTitle = null;
+      _brandingSplashSubtitle = null;
       notifyListeners();
       print('🔄 Configuraciones restablecidas');
     } catch (e) {
@@ -227,6 +271,16 @@ class SettingsProvider with ChangeNotifier {
       'autoLoadEnabled': _autoLoadData,
       'offlineModeEnabled': _offlineMode,
       'lastJsonUrl': _lastJsonUrl ?? 'N/A',
+      'brandingLogoUrl': brandingLogoUrl ?? 'Default',
+      'appTitle': appTitle,
+      'splashTitle': splashTitle,
+      'splashSubtitle': splashSubtitle,
     };
+  }
+
+  String? _normalizedOrNull(String? value) {
+    final normalized = value?.trim();
+    if (normalized == null || normalized.isEmpty) return null;
+    return normalized;
   }
 }

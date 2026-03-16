@@ -139,9 +139,12 @@ class AppTheme {
     double? width,
     double? height,
     BoxFit fit = BoxFit.contain,
+    String? imageUrl,
   }) {
+    final resolvedImageUrl = imageUrl ?? logoImageUrl;
+
     return Image.network(
-      logoImageUrl,
+      resolvedImageUrl,
       width: width,
       height: height,
       fit: fit,
