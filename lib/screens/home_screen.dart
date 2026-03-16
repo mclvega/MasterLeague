@@ -49,7 +49,11 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Row(
           children: [
             // Logo de la app
-            AppTheme.buildAppLogo(width: 96, height: 96),
+            AppTheme.buildAppLogo(
+              width: 96,
+              height: 96,
+              imageUrl: settingsProvider.brandingHomeLogoUrl,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(settingsProvider.appTitle),

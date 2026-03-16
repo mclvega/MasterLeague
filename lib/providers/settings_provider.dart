@@ -21,6 +21,7 @@ class SettingsProvider with ChangeNotifier {
   bool _autoLoadData = false;
   bool _offlineMode = false;
   String? _brandingLogoUrl;
+  String? _brandingHomeLogoUrl;
   String? _brandingAppTitle;
   String? _brandingSplashTitle;
   String? _brandingSplashSubtitle;
@@ -36,6 +37,7 @@ class SettingsProvider with ChangeNotifier {
   bool get autoLoadData => _autoLoadData;
   bool get offlineMode => _offlineMode;
   String? get brandingLogoUrl => _normalizedOrNull(_brandingLogoUrl);
+  String? get brandingHomeLogoUrl => _normalizedOrNull(_brandingHomeLogoUrl) ?? brandingLogoUrl;
   String get appTitle => _normalizedOrNull(_brandingAppTitle) ?? defaultAppTitle;
   String get splashTitle => _normalizedOrNull(_brandingSplashTitle) ?? defaultSplashTitle;
   String get splashSubtitle => _normalizedOrNull(_brandingSplashSubtitle) ?? defaultSplashSubtitle;
@@ -70,6 +72,7 @@ class SettingsProvider with ChangeNotifier {
       _autoLoadData = settings['autoLoadData'] == 'true';
       _offlineMode = settings['offlineMode'] == 'true';
       _brandingLogoUrl = settings['brandingLogoUrl'];
+      _brandingHomeLogoUrl = settings['brandingHomeLogoUrl'];
       _brandingAppTitle = settings['brandingAppTitle'];
       _brandingSplashTitle = settings['brandingSplashTitle'];
       _brandingSplashSubtitle = settings['brandingSplashSubtitle'];
@@ -184,6 +187,7 @@ class SettingsProvider with ChangeNotifier {
 
   Future<void> applyRemoteBranding(Map<String, String> configuration) async {
     final logoUrl = _normalizedOrNull(configuration['logoUrl']);
+    final homeLogoUrl = _normalizedOrNull(configuration['homeLogoUrl']);
     final appTitle = _normalizedOrNull(configuration['appTitle']);
     final splashTitle = _normalizedOrNull(configuration['splashTitle']);
     final splashSubtitle = _normalizedOrNull(configuration['splashSubtitle']);
@@ -192,12 +196,14 @@ class SettingsProvider with ChangeNotifier {
     try {
       await _settingsService.setBrandingConfiguration(
         logoUrl: logoUrl,
+        homeLogoUrl: homeLogoUrl,
         appTitle: appTitle,
         splashTitle: splashTitle,
         splashSubtitle: splashSubtitle,
         appVersion: appVersion,
       );
       _brandingLogoUrl = logoUrl;
+      _brandingHomeLogoUrl = homeLogoUrl;
       _brandingAppTitle = appTitle;
       _brandingSplashTitle = splashTitle;
       _brandingSplashSubtitle = splashSubtitle;
@@ -225,6 +231,7 @@ class SettingsProvider with ChangeNotifier {
       _autoLoadData = false;
       _offlineMode = false;
       _brandingLogoUrl = null;
+      _brandingHomeLogoUrl = null;
       _brandingAppTitle = null;
       _brandingSplashTitle = null;
       _brandingSplashSubtitle = null;
@@ -279,6 +286,7 @@ class SettingsProvider with ChangeNotifier {
       'offlineModeEnabled': _offlineMode,
       'lastJsonUrl': _lastJsonUrl ?? 'N/A',
       'brandingLogoUrl': brandingLogoUrl ?? 'Default',
+      'brandingHomeLogoUrl': brandingHomeLogoUrl ?? 'Default',
       'appTitle': appTitle,
       'splashTitle': splashTitle,
       'splashSubtitle': splashSubtitle,

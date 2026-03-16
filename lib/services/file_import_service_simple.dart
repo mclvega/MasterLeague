@@ -339,6 +339,13 @@ class FileImportService {
       case 'imagelogo':
       case 'urlimagenlogo':
         return 'logoUrl';
+      case 'homelogourl':
+      case 'applogourl':
+      case 'logoinicio':
+      case 'logohome':
+      case 'logoprincipal':
+      case 'logoapp':
+        return 'homeLogoUrl';
       case 'apptitle':
       case 'tituloapp':
       case 'nombreapp':

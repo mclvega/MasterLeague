@@ -318,10 +318,11 @@ void main() {
   final fixtureRows = <List<String>>[];
   final configurationsRows = <List<String>>[
     ['logoUrl', 'https://mrrichar.netlify.app/logo.png'],
+    ['homeLogoUrl', 'https://mrrichar.netlify.app/Logo%20Liga%20Master_.png'],
     ['appTitle', 'MRRICHAR'],
     ['splashTitle', 'Liga Master\nMRRICHAR'],
     ['splashSubtitle', 'Tu liga de fútbol profesional personalizada'],
-    ['version', '1.0.7+9'],
+    ['version', '1.0.8+10'],
   ];
   var fixtureCounter = 1;
 

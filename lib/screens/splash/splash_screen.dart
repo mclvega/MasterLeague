@@ -180,16 +180,16 @@ class _SplashScreenState extends State<SplashScreen>
                       child: FadeTransition(
                         opacity: _fadeAnimation,
                         child: SizedBox(
-                          width: 120,
-                          height: 120,
+                          width: 240,
+                          height: 240,
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
                               child: Image.network(
                                 settingsProvider.brandingLogoUrl ?? AppLinks.splashLogoImage,
-                                width: 104,
-                                height: 104,
+                                width: 240,
+                                height: 240,
                                 fit: BoxFit.contain,
                                 loadingBuilder: (context, child, loadingProgress) {
                                   if (loadingProgress == null) {
@@ -205,7 +205,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 errorBuilder: (context, error, stackTrace) {
                                   return const Icon(
                                     Icons.sports_soccer,
-                                    size: 56,
+                                    size: 240,
                                     color: Colors.white,
                                   );
                                 },
@@ -226,21 +226,24 @@ class _SplashScreenState extends State<SplashScreen>
                   builder: (context, child) {
                     return Opacity(
                       opacity: _fadeAnimation.value,
-                      child: Text(
-                        settingsProvider.splashTitle,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          height: 1.2,
-                          shadows: [
-                            Shadow(
-                              offset: Offset(0, 2),
-                              blurRadius: 4,
-                              color: Colors.black26,
-                            ),
-                          ],
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Text(
+                          settingsProvider.splashTitle,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            height: 1.2,
+                            shadows: [
+                              Shadow(
+                                offset: Offset(0, 2),
+                                blurRadius: 4,
+                                color: Colors.black26,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -255,13 +258,16 @@ class _SplashScreenState extends State<SplashScreen>
                   builder: (context, child) {
                     return Opacity(
                       opacity: _fadeAnimation.value * 0.8,
-                      child: Text(
-                        settingsProvider.splashSubtitle,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w500,
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Text(
+                          settingsProvider.splashSubtitle,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     );

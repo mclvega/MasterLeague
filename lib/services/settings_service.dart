@@ -16,6 +16,7 @@ class SettingsService {
   static const String _offlineModeKey = 'offline_mode';
   static const String _dataSourceUrlKey = 'data_source_url';
   static const String _brandingLogoUrlKey = 'branding_logo_url';
+  static const String _brandingHomeLogoUrlKey = 'branding_home_logo_url';
   static const String _brandingAppTitleKey = 'branding_app_title';
   static const String _brandingSplashTitleKey = 'branding_splash_title';
   static const String _brandingSplashSubtitleKey = 'branding_splash_subtitle';
@@ -111,6 +112,10 @@ class SettingsService {
     return await _db.getSetting(_brandingLogoUrlKey);
   }
 
+  Future<String?> getBrandingHomeLogoUrl() async {
+    return await _db.getSetting(_brandingHomeLogoUrlKey);
+  }
+
   Future<String?> getBrandingAppTitle() async {
     return await _db.getSetting(_brandingAppTitleKey);
   }
@@ -129,6 +134,7 @@ class SettingsService {
 
   Future<void> setBrandingConfiguration({
     String? logoUrl,
+    String? homeLogoUrl,
     String? appTitle,
     String? splashTitle,
     String? splashSubtitle,
@@ -136,6 +142,7 @@ class SettingsService {
   }) async {
     await Future.wait([
       _setOrDelete(_brandingLogoUrlKey, logoUrl),
+      _setOrDelete(_brandingHomeLogoUrlKey, homeLogoUrl),
       _setOrDelete(_brandingAppTitleKey, appTitle),
       _setOrDelete(_brandingSplashTitleKey, splashTitle),
       _setOrDelete(_brandingSplashSubtitleKey, splashSubtitle),
@@ -155,6 +162,7 @@ class SettingsService {
       'autoLoadData': (await getAutoLoadData()).toString(),
       'offlineMode': (await getOfflineMode()).toString(),
       'brandingLogoUrl': await getBrandingLogoUrl(),
+      'brandingHomeLogoUrl': await getBrandingHomeLogoUrl(),
       'brandingAppTitle': await getBrandingAppTitle(),
       'brandingSplashTitle': await getBrandingSplashTitle(),
       'brandingSplashSubtitle': await getBrandingSplashSubtitle(),
@@ -172,6 +180,7 @@ class SettingsService {
       _db.deleteSetting(_offlineModeKey),
       _db.deleteSetting(_dataSourceUrlKey),
       _db.deleteSetting(_brandingLogoUrlKey),
+      _db.deleteSetting(_brandingHomeLogoUrlKey),
       _db.deleteSetting(_brandingAppTitleKey),
       _db.deleteSetting(_brandingSplashTitleKey),
       _db.deleteSetting(_brandingSplashSubtitleKey),
@@ -217,6 +226,9 @@ class SettingsService {
               break;
             case 'brandingLogoUrl':
               await _setOrDelete(_brandingLogoUrlKey, entry.value?.toString());
+              break;
+            case 'brandingHomeLogoUrl':
+              await _setOrDelete(_brandingHomeLogoUrlKey, entry.value?.toString());
               break;
             case 'brandingAppTitle':
               await _setOrDelete(_brandingAppTitleKey, entry.value?.toString());
