@@ -321,7 +321,7 @@ void main() {
     ['appTitle', 'MRRICHAR'],
     ['splashTitle', 'Liga Master\nMRRICHAR'],
     ['splashSubtitle', 'Tu liga de fútbol profesional personalizada'],
-    ['version', '1.0.6+8'],
+    ['version', '1.0.7+9'],
   ];
   var fixtureCounter = 1;
 
