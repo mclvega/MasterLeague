@@ -19,6 +19,7 @@ class SettingsService {
   static const String _brandingAppTitleKey = 'branding_app_title';
   static const String _brandingSplashTitleKey = 'branding_splash_title';
   static const String _brandingSplashSubtitleKey = 'branding_splash_subtitle';
+  static const String _brandingAppVersionKey = 'branding_app_version';
 
   // === EQUIPO POR DEFECTO ===
 
@@ -122,17 +123,23 @@ class SettingsService {
     return await _db.getSetting(_brandingSplashSubtitleKey);
   }
 
+  Future<String?> getBrandingAppVersion() async {
+    return await _db.getSetting(_brandingAppVersionKey);
+  }
+
   Future<void> setBrandingConfiguration({
     String? logoUrl,
     String? appTitle,
     String? splashTitle,
     String? splashSubtitle,
+    String? appVersion,
   }) async {
     await Future.wait([
       _setOrDelete(_brandingLogoUrlKey, logoUrl),
       _setOrDelete(_brandingAppTitleKey, appTitle),
       _setOrDelete(_brandingSplashTitleKey, splashTitle),
       _setOrDelete(_brandingSplashSubtitleKey, splashSubtitle),
+      _setOrDelete(_brandingAppVersionKey, appVersion),
     ]);
   }
 
@@ -151,6 +158,7 @@ class SettingsService {
       'brandingAppTitle': await getBrandingAppTitle(),
       'brandingSplashTitle': await getBrandingSplashTitle(),
       'brandingSplashSubtitle': await getBrandingSplashSubtitle(),
+      'brandingAppVersion': await getBrandingAppVersion(),
     };
   }
 
@@ -167,6 +175,7 @@ class SettingsService {
       _db.deleteSetting(_brandingAppTitleKey),
       _db.deleteSetting(_brandingSplashTitleKey),
       _db.deleteSetting(_brandingSplashSubtitleKey),
+      _db.deleteSetting(_brandingAppVersionKey),
     ]);
     print('🔄 Todas las configuraciones han sido restablecidas');
   }
@@ -217,6 +226,9 @@ class SettingsService {
               break;
             case 'brandingSplashSubtitle':
               await _setOrDelete(_brandingSplashSubtitleKey, entry.value?.toString());
+              break;
+            case 'brandingAppVersion':
+              await _setOrDelete(_brandingAppVersionKey, entry.value?.toString());
               break;
           }
         }

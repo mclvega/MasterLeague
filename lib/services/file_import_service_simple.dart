@@ -355,6 +355,11 @@ class FileImportService {
       case 'subtitle':
       case 'subtitulo':
         return 'splashSubtitle';
+      case 'version':
+      case 'appversion':
+      case 'versionapp':
+      case 'versionaplicacion':
+        return 'appVersion';
       default:
         return null;
     }

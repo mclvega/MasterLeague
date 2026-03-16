@@ -332,6 +332,19 @@ class _SplashScreenState extends State<SplashScreen>
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+
+                    if (settingsProvider.appVersion != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Version ${settingsProvider.appVersion}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.white38,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
 

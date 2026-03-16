@@ -24,6 +24,7 @@ class SettingsProvider with ChangeNotifier {
   String? _brandingAppTitle;
   String? _brandingSplashTitle;
   String? _brandingSplashSubtitle;
+  String? _brandingAppVersion;
 
   // Getters
   bool get isLoading => _isLoading;
@@ -38,6 +39,7 @@ class SettingsProvider with ChangeNotifier {
   String get appTitle => _normalizedOrNull(_brandingAppTitle) ?? defaultAppTitle;
   String get splashTitle => _normalizedOrNull(_brandingSplashTitle) ?? defaultSplashTitle;
   String get splashSubtitle => _normalizedOrNull(_brandingSplashSubtitle) ?? defaultSplashSubtitle;
+  String? get appVersion => _normalizedOrNull(_brandingAppVersion);
   bool get hasDefaultTeam => _defaultTeamId != null && _defaultTeamId!.isNotEmpty;
 
   void setLoading(bool loading) {
@@ -71,6 +73,7 @@ class SettingsProvider with ChangeNotifier {
       _brandingAppTitle = settings['brandingAppTitle'];
       _brandingSplashTitle = settings['brandingSplashTitle'];
       _brandingSplashSubtitle = settings['brandingSplashSubtitle'];
+      _brandingAppVersion = settings['brandingAppVersion'];
       
       print('⚙️ Configuraciones cargadas');
     } catch (e) {
@@ -184,6 +187,7 @@ class SettingsProvider with ChangeNotifier {
     final appTitle = _normalizedOrNull(configuration['appTitle']);
     final splashTitle = _normalizedOrNull(configuration['splashTitle']);
     final splashSubtitle = _normalizedOrNull(configuration['splashSubtitle']);
+    final appVersion = _normalizedOrNull(configuration['appVersion']);
 
     try {
       await _settingsService.setBrandingConfiguration(
@@ -191,11 +195,13 @@ class SettingsProvider with ChangeNotifier {
         appTitle: appTitle,
         splashTitle: splashTitle,
         splashSubtitle: splashSubtitle,
+        appVersion: appVersion,
       );
       _brandingLogoUrl = logoUrl;
       _brandingAppTitle = appTitle;
       _brandingSplashTitle = splashTitle;
       _brandingSplashSubtitle = splashSubtitle;
+      _brandingAppVersion = appVersion;
       notifyListeners();
     } catch (e) {
       _error = 'Error aplicando configuraciones remotas: $e';
@@ -222,6 +228,7 @@ class SettingsProvider with ChangeNotifier {
       _brandingAppTitle = null;
       _brandingSplashTitle = null;
       _brandingSplashSubtitle = null;
+      _brandingAppVersion = null;
       notifyListeners();
       print('🔄 Configuraciones restablecidas');
     } catch (e) {
@@ -275,6 +282,7 @@ class SettingsProvider with ChangeNotifier {
       'appTitle': appTitle,
       'splashTitle': splashTitle,
       'splashSubtitle': splashSubtitle,
+      'appVersion': appVersion ?? 'N/A',
     };
   }
 
