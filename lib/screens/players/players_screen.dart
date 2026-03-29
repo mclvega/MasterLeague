@@ -86,8 +86,10 @@ class _PlayersScreenState extends State<PlayersScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Reset all filters every time the widget is inserted into the tree (e.g., tab navigation)
-    _resetFilters();
+    // Diferir el reset de filtros para evitar setState en build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _resetFilters();
+    });
   }
 
   void _resetFilters() {
@@ -231,20 +233,30 @@ class _PlayersScreenState extends State<PlayersScreen> {
                     _selectedTeamId = null;
                     _selectedClub = null;
                     _selectedCountry = null;
+                    _selectedPlayerStyle = null;
                     _selectedIsFree = null;
                     _selectedMinPrice = null;
                     _selectedMaxPrice = null;
+                    _selectedMinOverall = null;
+                    _selectedMaxOverall = null;
                     _sortBy = 'name';
                     _sortAscending = true;
+                    _searchController.text = '';
                   });
-                  playerProvider.filterByPosition(null);
-                  playerProvider.filterByTeam(null);
-                  playerProvider.filterByClub(null);
-                  playerProvider.filterByCountry(null);
-                  playerProvider.filterByFreeStatus(null);
-                  playerProvider.filterByPriceRange(null, null);
-                  playerProvider.sortPlayers(_sortBy,
-                      ascending: _sortAscending);
+                  playerProvider.setFilters(
+                    position: null,
+                    teamId: null,
+                    club: null,
+                    country: null,
+                    playerStyle: null,
+                    isFree: null,
+                    minPrice: null,
+                    maxPrice: null,
+                    minOverall: null,
+                    maxOverall: null,
+                  );
+                  playerProvider.sortPlayers('name', ascending: true);
+                  playerProvider.searchPlayers('');
                 },
                 icon: const Icon(Icons.filter_alt_off),
               ),
