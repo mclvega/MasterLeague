@@ -5,7 +5,7 @@ import '../services/settings_service.dart';
 class SettingsProvider with ChangeNotifier {
   static const String defaultAppTitle = 'MRRICHAR';
   static const String defaultSplashTitle = 'Liga Master\nMRRICHAR';
-  static const String defaultSplashSubtitle = 'Puto el que lo lee';
+  static const String defaultSplashSubtitle = '';
 
   final SettingsService _settingsService = SettingsService();
   
