@@ -92,6 +92,24 @@ class PlayerCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         _buildContractDurationChip(),
                       ],
+                      if (player.playerStyle.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.infoColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppTheme.infoColor),
+                          ),
+                          child: Text(
+                            player.playerStyle,
+                            style: AppTheme.captionStyle.copyWith(
+                              color: AppTheme.infoColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                       const Spacer(),
                       if (team != null) ...[
                         const Icon(
@@ -312,6 +330,7 @@ class PlayerDetailsScreen extends StatelessWidget {
               _buildDetailRow('Club', player.club),
               _buildDetailRow('Nacionalidad', player.nationality),
               _buildDetailRow('Edad', '${player.age} años'),
+              _buildDetailRow('Estilo de juego', player.playerStyle.isNotEmpty ? player.playerStyle : 'No especificado'),
               _buildDetailRow('Agente libre', player.isFreeAgent ? 'Sí' : 'No'),
               _buildDetailRow('Media', player.overall.toString()),
               _buildDetailRow('Precio', '\$${NumberFormatUtils.money(player.price)}'),

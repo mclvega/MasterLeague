@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/player_provider.dart';
 import '../../providers/team_provider.dart';
-import '../../providers/settings_provider.dart';
 import '../../utils/theme.dart';
 import '../../widgets/player_card.dart';
 
@@ -22,6 +21,9 @@ class _PlayersScreenState extends State<PlayersScreen> {
   bool? _selectedIsFree;
   double? _selectedMinPrice;
   double? _selectedMaxPrice;
+  int? _selectedMinOverall;
+  int? _selectedMaxOverall;
+  String? _selectedPlayerStyle;
   String _sortBy = 'name';
   bool _sortAscending = true;
 
@@ -48,6 +50,32 @@ class _PlayersScreenState extends State<PlayersScreen> {
     'DC',
   ];
 
+  final List<String> _playerStyles = [
+    'Todos',
+    'Cazagoles',
+    'Señuelo',
+    'Hombre de área',
+    'Extremo prolífico',
+    'Clásico No. 10',
+    'Jugador de huecos',
+    'De área a área',
+    'El protector',
+    'El destructor',
+    'Atacante extra',
+    'Lateral ofensivo',
+    'Lateral defensivo',
+    'Enganche',
+    'Creador de juego',
+    'Creación',
+    'Portero ofensivo',
+    'Portero defensivo',
+    'Ala móvil',
+    'Especialista en centros',
+    'Organizador',
+    'Lateral finalizador',
+    'Proteger el balón',
+  ];
+
   final List<Map<String, dynamic>> _sortOptions = [
     {'label': 'Nombre', 'value': 'name'},
     {'label': 'Posicion', 'value': 'position'},
@@ -56,18 +84,43 @@ class _PlayersScreenState extends State<PlayersScreen> {
   ];
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reset all filters every time the widget is inserted into the tree (e.g., tab navigation)
+    _resetFilters();
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final settingsProvider = context.read<SettingsProvider>();
-      if (settingsProvider.defaultTeamId != null && settingsProvider.defaultTeamId!.isNotEmpty) {
-        setState(() {
-          _selectedTeamId = settingsProvider.defaultTeamId;
-        });
-        context.read<PlayerProvider>().filterByTeam(_selectedTeamId);
-      }
+  void _resetFilters() {
+    setState(() {
+      _selectedPosition = null;
+      _selectedTeamId = null;
+      _selectedClub = null;
+      _selectedCountry = null;
+      _selectedPlayerStyle = null;
+      _selectedIsFree = null;
+      _selectedMinPrice = null;
+      _selectedMaxPrice = null;
+      _selectedMinOverall = null;
+      _selectedMaxOverall = null;
+      _sortBy = 'name';
+      _sortAscending = true;
+      _searchController.text = '';
     });
+    final playerProvider = context.read<PlayerProvider>();
+    playerProvider.setFilters(
+      position: null,
+      teamId: null,
+      club: null,
+      country: null,
+      playerStyle: null,
+      isFree: null,
+      minPrice: null,
+      maxPrice: null,
+      minOverall: null,
+      maxOverall: null,
+    );
+    playerProvider.sortPlayers('name', ascending: true);
+    playerProvider.searchPlayers('');
   }
 
   @override
@@ -95,7 +148,8 @@ class _PlayersScreenState extends State<PlayersScreen> {
     );
   }
 
-  Widget _buildSearchAndFilters(PlayerProvider playerProvider, TeamProvider teamProvider) {
+  Widget _buildSearchAndFilters(
+      PlayerProvider playerProvider, TeamProvider teamProvider) {
     final clubs = playerProvider.clubs;
     final countries = playerProvider.players
         .map((p) => p.nationality.trim())
@@ -110,10 +164,15 @@ class _PlayersScreenState extends State<PlayersScreen> {
         'Equipo: ${teamProvider.getTeamById(_selectedTeamId!)?.name ?? _selectedTeamId}',
       if (_selectedClub != null) 'Club: $_selectedClub',
       if (_selectedCountry != null) 'País: $_selectedCountry',
+      if (_selectedPlayerStyle != null) 'Estilo: $_selectedPlayerStyle',
       if (_selectedIsFree != null)
         _selectedIsFree! ? 'Estado: Agente libre' : 'Estado: Con equipo',
-      if (_selectedMinPrice != null) 'Min: ${_selectedMinPrice!.toStringAsFixed(0)}',
-      if (_selectedMaxPrice != null) 'Max: ${_selectedMaxPrice!.toStringAsFixed(0)}',
+      if (_selectedMinPrice != null)
+        'Min precio: ${_selectedMinPrice!.toStringAsFixed(0)}',
+      if (_selectedMaxPrice != null)
+        'Max precio: ${_selectedMaxPrice!.toStringAsFixed(0)}',
+      if (_selectedMinOverall != null) 'Min media: $_selectedMinOverall',
+      if (_selectedMaxOverall != null) 'Max media: $_selectedMaxOverall',
     ];
 
     return Padding(
@@ -152,10 +211,13 @@ class _PlayersScreenState extends State<PlayersScreen> {
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Colors.white),
                   ),
-                  onPressed: () => _openFiltersModal(playerProvider, teamProvider, clubs, countries),
+                  onPressed: () => _openFiltersModal(
+                      playerProvider, teamProvider, clubs, countries),
                   icon: const Icon(Icons.tune),
                   label: Text(
-                    activeFilters.isEmpty ? 'Filtros' : 'Filtros (${activeFilters.length})',
+                    activeFilters.isEmpty
+                        ? 'Filtros'
+                        : 'Filtros (${activeFilters.length})',
                   ),
                 ),
               ),
@@ -181,7 +243,8 @@ class _PlayersScreenState extends State<PlayersScreen> {
                   playerProvider.filterByCountry(null);
                   playerProvider.filterByFreeStatus(null);
                   playerProvider.filterByPriceRange(null, null);
-                  playerProvider.sortPlayers(_sortBy, ascending: _sortAscending);
+                  playerProvider.sortPlayers(_sortBy,
+                      ascending: _sortAscending);
                 },
                 icon: const Icon(Icons.filter_alt_off),
               ),
@@ -204,12 +267,23 @@ class _PlayersScreenState extends State<PlayersScreen> {
     String? tempTeamId = _selectedTeamId;
     String? tempClub = _selectedClub;
     String? tempCountry = _selectedCountry;
+    String? tempPlayerStyle = _selectedPlayerStyle;
     bool? tempIsFree = _selectedIsFree;
     final minController = TextEditingController(
-      text: _selectedMinPrice != null ? _selectedMinPrice!.toStringAsFixed(0) : '',
+      text: _selectedMinPrice != null
+          ? _selectedMinPrice!.toStringAsFixed(0)
+          : '',
     );
     final maxController = TextEditingController(
-      text: _selectedMaxPrice != null ? _selectedMaxPrice!.toStringAsFixed(0) : '',
+      text: _selectedMaxPrice != null
+          ? _selectedMaxPrice!.toStringAsFixed(0)
+          : '',
+    );
+    final minOverallController = TextEditingController(
+      text: _selectedMinOverall != null ? _selectedMinOverall.toString() : '',
+    );
+    final maxOverallController = TextEditingController(
+      text: _selectedMaxOverall != null ? _selectedMaxOverall.toString() : '',
     );
 
     await showModalBottomSheet(
@@ -230,13 +304,15 @@ class _PlayersScreenState extends State<PlayersScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Filtros de jugadores', style: Theme.of(context).textTheme.titleLarge),
+                    Text('Filtros de jugadores',
+                        style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: tempPosition ?? 'Todas',
                       decoration: const InputDecoration(labelText: 'Posición'),
                       items: _positions
-                          .map((position) => DropdownMenuItem(value: position, child: Text(position)))
+                          .map((position) => DropdownMenuItem(
+                              value: position, child: Text(position)))
                           .toList(),
                       onChanged: (value) {
                         setModalState(() {
@@ -245,13 +321,36 @@ class _PlayersScreenState extends State<PlayersScreen> {
                       },
                     ),
                     const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: minOverallController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                                labelText: 'Media mínima'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: maxOverallController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                                labelText: 'Media máxima'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
                       value: tempTeamId ?? 'Todos',
                       decoration: const InputDecoration(labelText: 'Equipo'),
                       items: [
-                        const DropdownMenuItem(value: 'Todos', child: Text('Todos')),
-                        ...teamProvider.teams
-                            .map((team) => DropdownMenuItem(value: team.id, child: Text(team.name))),
+                        const DropdownMenuItem(
+                            value: 'Todos', child: Text('Todos')),
+                        ...teamProvider.teams.map((team) => DropdownMenuItem(
+                            value: team.id, child: Text(team.name))),
                       ],
                       onChanged: (value) {
                         setModalState(() {
@@ -264,8 +363,10 @@ class _PlayersScreenState extends State<PlayersScreen> {
                       value: tempClub ?? 'Todos',
                       decoration: const InputDecoration(labelText: 'Club'),
                       items: [
-                        const DropdownMenuItem(value: 'Todos', child: Text('Todos')),
-                        ...clubs.map((club) => DropdownMenuItem(value: club, child: Text(club))),
+                        const DropdownMenuItem(
+                            value: 'Todos', child: Text('Todos')),
+                        ...clubs.map((club) =>
+                            DropdownMenuItem(value: club, child: Text(club))),
                       ],
                       onChanged: (value) {
                         setModalState(() {
@@ -278,8 +379,10 @@ class _PlayersScreenState extends State<PlayersScreen> {
                       value: tempCountry ?? 'Todos',
                       decoration: const InputDecoration(labelText: 'País'),
                       items: [
-                        const DropdownMenuItem(value: 'Todos', child: Text('Todos')),
-                        ...countries.map((country) => DropdownMenuItem(value: country, child: Text(country))),
+                        const DropdownMenuItem(
+                            value: 'Todos', child: Text('Todos')),
+                        ...countries.map((country) => DropdownMenuItem(
+                            value: country, child: Text(country))),
                       ],
                       onChanged: (value) {
                         setModalState(() {
@@ -288,8 +391,23 @@ class _PlayersScreenState extends State<PlayersScreen> {
                       },
                     ),
                     const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: tempPlayerStyle ?? 'Todos',
+                      decoration:
+                          const InputDecoration(labelText: 'Estilo de juego'),
+                      items: _playerStyles
+                          .map((style) => DropdownMenuItem(
+                              value: style, child: Text(style)))
+                          .toList(),
+                      onChanged: (value) {
+                        setModalState(() {
+                          tempPlayerStyle = value == 'Todos' ? null : value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 10),
                     DropdownButtonFormField<bool?>(
-                      initialValue: tempIsFree,
+                      value: tempIsFree,
                       decoration: const InputDecoration(labelText: 'Estado'),
                       items: _freeStatusOptions
                           .map(
@@ -312,7 +430,8 @@ class _PlayersScreenState extends State<PlayersScreen> {
                           child: TextField(
                             controller: minController,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Precio mínimo'),
+                            decoration: const InputDecoration(
+                                labelText: 'Precio mínimo'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -320,7 +439,8 @@ class _PlayersScreenState extends State<PlayersScreen> {
                           child: TextField(
                             controller: maxController,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Precio máximo'),
+                            decoration: const InputDecoration(
+                                labelText: 'Precio máximo'),
                           ),
                         ),
                       ],
@@ -331,9 +451,10 @@ class _PlayersScreenState extends State<PlayersScreen> {
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             value: tempSortBy,
-                            decoration: const InputDecoration(labelText: 'Ordenar por'),
+                            decoration:
+                                const InputDecoration(labelText: 'Ordenar por'),
                             items: _sortOptions
-                              .map((option) => DropdownMenuItem<String>(
+                                .map((option) => DropdownMenuItem<String>(
                                       value: option['value'],
                                       child: Text(option['label']),
                                     ))
@@ -349,7 +470,9 @@ class _PlayersScreenState extends State<PlayersScreen> {
                         ),
                         const SizedBox(width: 10),
                         IconButton(
-                          icon: Icon(tempSortAscending ? Icons.arrow_upward : Icons.arrow_downward),
+                          icon: Icon(tempSortAscending
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward),
                           onPressed: () {
                             setModalState(() {
                               tempSortAscending = !tempSortAscending;
@@ -373,28 +496,45 @@ class _PlayersScreenState extends State<PlayersScreen> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
-                              final parsedMin = double.tryParse(minController.text.trim());
-                              final parsedMax = double.tryParse(maxController.text.trim());
+                              final parsedMin =
+                                  double.tryParse(minController.text.trim());
+                              final parsedMax =
+                                  double.tryParse(maxController.text.trim());
+
+                              final parsedMinOverall = int.tryParse(
+                                  minOverallController.text.trim());
+                              final parsedMaxOverall = int.tryParse(
+                                  maxOverallController.text.trim());
 
                               setState(() {
                                 _selectedPosition = tempPosition;
                                 _selectedTeamId = tempTeamId;
                                 _selectedClub = tempClub;
                                 _selectedCountry = tempCountry;
+                                _selectedPlayerStyle = tempPlayerStyle;
                                 _selectedIsFree = tempIsFree;
                                 _selectedMinPrice = parsedMin;
                                 _selectedMaxPrice = parsedMax;
+                                _selectedMinOverall = parsedMinOverall;
+                                _selectedMaxOverall = parsedMaxOverall;
                                 _sortBy = tempSortBy;
                                 _sortAscending = tempSortAscending;
                               });
 
-                              playerProvider.filterByPosition(_selectedPosition);
-                              playerProvider.filterByTeam(_selectedTeamId);
-                              playerProvider.filterByClub(_selectedClub);
-                              playerProvider.filterByCountry(_selectedCountry);
-                              playerProvider.filterByFreeStatus(_selectedIsFree);
-                              playerProvider.filterByPriceRange(_selectedMinPrice, _selectedMaxPrice);
-                              playerProvider.sortPlayers(_sortBy, ascending: _sortAscending);
+                              playerProvider.setFilters(
+                                position: _selectedPosition,
+                                teamId: _selectedTeamId,
+                                club: _selectedClub,
+                                country: _selectedCountry,
+                                playerStyle: _selectedPlayerStyle,
+                                isFree: _selectedIsFree,
+                                minPrice: _selectedMinPrice,
+                                maxPrice: _selectedMaxPrice,
+                                minOverall: _selectedMinOverall,
+                                maxOverall: _selectedMaxOverall,
+                              );
+                              playerProvider.sortPlayers(_sortBy,
+                                  ascending: _sortAscending);
 
                               Navigator.of(context).pop();
                             },
@@ -412,8 +552,6 @@ class _PlayersScreenState extends State<PlayersScreen> {
       },
     );
   }
-
- 
 
   Widget _buildPlayerList(PlayerProvider playerProvider) {
     if (playerProvider.isLoading) {

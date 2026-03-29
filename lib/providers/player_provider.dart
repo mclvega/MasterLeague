@@ -1,3 +1,6 @@
+
+
+
 import 'package:flutter/foundation.dart';
 import '../models/player.dart';
 import '../services/file_import_service_simple.dart';
@@ -5,6 +8,33 @@ import '../utils/position_utils.dart';
 import '../utils/app_links.dart';
 
 class PlayerProvider with ChangeNotifier {
+
+    void setFilters({
+      String? position,
+      String? teamId,
+      String? club,
+      String? country,
+      String? playerStyle,
+      bool? isFree,
+      double? minPrice,
+      double? maxPrice,
+      int? minOverall,
+      int? maxOverall,
+    }) {
+      _positionFilter = (position == null || position.isEmpty) ? null : PositionUtils.normalize(position).toLowerCase();
+      _teamFilter = (teamId == null || teamId.isEmpty) ? null : teamId;
+      final normalizedClub = club?.trim();
+      _clubFilter = (normalizedClub == null || normalizedClub.isEmpty) ? null : normalizedClub.toLowerCase();
+      _countryFilter = (country == null || country.isEmpty) ? null : country.toLowerCase();
+      _playerStyleFilter = (playerStyle == null || playerStyle.isEmpty) ? null : playerStyle;
+      _isFreeFilter = isFree;
+      _minPriceFilter = minPrice;
+      _maxPriceFilter = maxPrice;
+      _minOverallFilter = minOverall;
+      _maxOverallFilter = maxOverall;
+      _applyFilters();
+      notifyListeners();
+    }
   static const Map<String, int> _positionSortOrder = {
     'PT': 1,
     'DEC': 2,
@@ -31,9 +61,23 @@ class PlayerProvider with ChangeNotifier {
   String? _teamFilter;
   String? _clubFilter;
   String? _countryFilter;
+  String? _playerStyleFilter;
   bool? _isFreeFilter;
   double? _minPriceFilter;
   double? _maxPriceFilter;
+  int? _minOverallFilter;
+  int? _maxOverallFilter;
+    void filterByOverallRange(int? min, int? max) {
+      _minOverallFilter = min;
+      _maxOverallFilter = max;
+      _applyFilters();
+      notifyListeners();
+    }
+  void filterByPlayerStyle(String? style) {
+    _playerStyleFilter = (style == null || style.isEmpty) ? null : style;
+    _applyFilters();
+    notifyListeners();
+  }
 
   List<Player> get players => _players;
   List<Player> get filteredPlayers => _filteredPlayers;
@@ -152,38 +196,47 @@ class PlayerProvider with ChangeNotifier {
 
   void _applyFilters() {
     _filteredPlayers = _players.where((player) {
-      final matchesSearch = _searchQuery.isEmpty ||
+        final matchesSearch = _searchQuery.isEmpty || 
           player.name.toLowerCase().contains(_searchQuery) ||
           player.position.toLowerCase().contains(_searchQuery) ||
           player.club.toLowerCase().contains(_searchQuery) ||
           player.nationality.toLowerCase().contains(_searchQuery);
 
-      final matchesPosition = _positionFilter == null ||
+        final matchesPosition = _positionFilter == null ||
           PositionUtils.normalize(player.position).toLowerCase() == _positionFilter;
 
-      final matchesTeam = _teamFilter == null ||
+        final matchesTeam = _teamFilter == null ||
           (player.assignedTeamId == _teamFilter);
 
         final matchesClub = _clubFilter == null ||
           player.club.trim().toLowerCase() == _clubFilter;
 
-      final matchesCountry = _countryFilter == null ||
+        final matchesCountry = _countryFilter == null ||
           player.nationality.toLowerCase() == _countryFilter;
 
-      final matchesFreeStatus = _isFreeFilter == null ||
+        final matchesPlayerStyle = _playerStyleFilter == null ||
+          player.playerStyle == _playerStyleFilter;
+
+        final matchesFreeStatus = _isFreeFilter == null ||
           player.isFreeAgent == _isFreeFilter;
 
-      final matchesMinPrice = _minPriceFilter == null || player.price >= _minPriceFilter!;
-      final matchesMaxPrice = _maxPriceFilter == null || player.price <= _maxPriceFilter!;
+        final matchesMinPrice = _minPriceFilter == null || player.price >= _minPriceFilter!;
+        final matchesMaxPrice = _maxPriceFilter == null || player.price <= _maxPriceFilter!;
 
-      return matchesSearch &&
+        final matchesMinOverall = _minOverallFilter == null || player.overall >= _minOverallFilter!;
+        final matchesMaxOverall = _maxOverallFilter == null || player.overall <= _maxOverallFilter!;
+
+        return matchesSearch &&
           matchesPosition &&
           matchesTeam &&
           matchesClub &&
           matchesCountry &&
+          matchesPlayerStyle &&
           matchesFreeStatus &&
           matchesMinPrice &&
-          matchesMaxPrice;
+          matchesMaxPrice &&
+          matchesMinOverall &&
+          matchesMaxOverall;
     }).toList();
     _sortFilteredPlayersAlphabetically();
   }
@@ -338,6 +391,7 @@ class PlayerProvider with ChangeNotifier {
         club: 'Paris Saint-Germain',
         nationality: 'Francia',
         age: 24,
+        playerStyle: 'Cazagoles',
       ),
       Player(
         id: '2',
@@ -349,6 +403,7 @@ class PlayerProvider with ChangeNotifier {
         club: 'Inter Miami',
         nationality: 'Argentina',
         age: 36,
+        playerStyle: 'Creador de juego',
       ),
       Player(
         id: '3',
@@ -360,6 +415,7 @@ class PlayerProvider with ChangeNotifier {
         club: 'Manchester City',
         nationality: 'Noruega',
         age: 23,
+        playerStyle: 'Hombre de área',
       ),
     ];
     

@@ -421,8 +421,8 @@ class FileImportService {
           name: name,
           position: _cell(row, headers, ['position', 'posicion', 'pos'], fallbackIndex: 2),
           price: _toDouble(_cell(row, headers, ['price', 'precio', 'valor'], fallbackIndex: 3)),
-            teamId: isFree ? null : teamId,
-            isFree: isFree,
+          teamId: isFree ? null : teamId,
+          isFree: isFree,
           overall: _toInt(_cell(row, headers, ['overall', 'media', 'rating'], fallbackIndex: 5)),
           club: _cell(row, headers, ['club', 'equipo', 'team'], fallbackIndex: 6),
           nationality: _cell(row, headers, ['nationality', 'nacionalidad', 'pais'], fallbackIndex: 7),
@@ -431,6 +431,7 @@ class FileImportService {
           contractStart: contractStart,
           contractEnd: contractEnd,
           photoUrl: _nullable(_cell(row, headers, ['photourl', 'photo', 'imagen', 'foto', 'imageurl', 'image', 'fotojugador'], fallbackIndex: -1)),
+          playerStyle: _cell(row, headers, ['playerstyle', 'estilo', 'estilo_de_juego'], fallbackIndex: -1) ?? '',
         ),
       );
     }

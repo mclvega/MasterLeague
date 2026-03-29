@@ -123,6 +123,7 @@ void main() {
     'contractStart',
     'contractEnd',
     'photo',
+    'playerStyle',
   ];
 
   final teamsHeaders = [
@@ -199,6 +200,15 @@ void main() {
       final durationYears = 2 + ((i + j) % 4);
       final endYear = 2026 + durationYears;
 
+      // Lista de estilos de juego ejemplo
+      const playerStyles = [
+        'Cazagoles', 'Señuelo', 'Hombre de área', 'Extremo prolífico', 'Clásico No. 10',
+        'Jugador de huecos', 'De área a área', 'El protector', 'El destructor', 'Atacante extra',
+        'Lateral ofensivo', 'Lateral defensivo', 'Enganche', 'Creador de juego', 'Creación',
+        'Portero ofensivo', 'Portero defensivo', 'Ala móvil', 'Especialista en centros',
+        'Organizador', 'Lateral finalizador', 'Proteger el balón'
+      ];
+      final style = playerStyles[(i + j) % playerStyles.length];
       playersRows.add([
         playerId,
         'Jugador ${i + 1}-${j + 1}',
@@ -213,6 +223,7 @@ void main() {
         '2026-07-01',
         '$endYear-06-30',
         '',
+        style,
       ]);
 
       playerCounter++;
