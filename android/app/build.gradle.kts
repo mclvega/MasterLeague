@@ -8,7 +8,7 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-project.setProperty("archivesBaseName", "MRRICHAR")
+project.setProperty("archivesBaseName", "Liga Máster")
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
