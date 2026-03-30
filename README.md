@@ -105,6 +105,38 @@ Los archivos deben incluir las siguientes columnas (el orden no importa):
 - **Competiciones**: Organización de ligas, copas y torneos
 - **Libres**: Jugadores disponibles sin equipo
 
+### Transiciones Entre Pantallas
+
+La app usa navegación con `Navigator` + `MaterialPageRoute`, por lo que aplica la animación estándar de Flutter (entrada) y su reversa automática al volver atrás (`pop`).
+
+- `push`: abre una nueva pantalla
+- `pushReplacement`: reemplaza la pantalla actual
+- `pop`: vuelve atrás con animación inversa
+
+Ejemplo reutilizable:
+
+```dart
+Navigator.of(context).push(
+   MaterialPageRoute(
+      builder: (_) => const SomeScreen(),
+   ),
+);
+```
+
+```dart
+Navigator.of(context).pushReplacement(
+   MaterialPageRoute(
+      builder: (_) => const HomeScreen(),
+   ),
+);
+```
+
+```dart
+Navigator.of(context).pop();
+```
+
+Si quieres centralizar esto en otro proyecto, crea un helper de navegación (`AppNav`) y encapsula estas 3 operaciones.
+
 ## Funcionalidades Principales
 
 ### Búsqueda y Filtros
