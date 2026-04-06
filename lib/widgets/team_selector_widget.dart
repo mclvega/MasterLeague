@@ -77,8 +77,25 @@ class _TeamSelectorWidgetState extends State<TeamSelectorWidget> {
       filtered = filtered.where((team) => team.budget > 0).toList();
     }
 
-    // Ordenar alfabéticamente
-    filtered.sort((a, b) => a.name.compareTo(b.name));
+    // Ordenar por posicion ascendente; sin posicion al final y desempate por nombre.
+    filtered.sort((a, b) {
+      final aPos = a.stats?.position;
+      final bPos = b.stats?.position;
+      final aHasPos = aPos != null && aPos > 0;
+      final bHasPos = bPos != null && bPos > 0;
+
+      if (aHasPos && bHasPos) {
+        final byPosition = aPos.compareTo(bPos);
+        if (byPosition != 0) return byPosition;
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      }
+
+      if (aHasPos != bHasPos) {
+        return aHasPos ? -1 : 1;
+      }
+
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
 
     return filtered;
   }

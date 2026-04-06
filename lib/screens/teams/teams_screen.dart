@@ -832,7 +832,7 @@ class _TeamSquadTabState extends State<TeamSquadTab> {
     'EXI': 10,
     'EXD': 11,
     'SD': 12,
-    'DC': 13,
+    'CD': 13,
   };
 
   final TextEditingController _searchController = TextEditingController();
@@ -858,7 +858,7 @@ class _TeamSquadTabState extends State<TeamSquadTab> {
     'EXI',
     'EXD',
     'SD',
-    'DC',
+    'CD',
   ];
 
   final List<Map<String, String>> _sortOptions = const [

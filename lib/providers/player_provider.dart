@@ -48,7 +48,7 @@ class PlayerProvider with ChangeNotifier {
     'EXI': 10,
     'EXD': 11,
     'SD': 12,
-    'DC': 13,
+    'CD': 13,
   };
 
   final List<Player> _players = [];

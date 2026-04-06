@@ -89,8 +89,8 @@ void main() {
     'EXI',
     'EXD',
     'SD',
-    'DC',
-    'DC',
+    'CD',
+    'CD',
     'MO',
   ];
 
@@ -333,7 +333,7 @@ void main() {
     ['appTitle', 'MRRICHAR'],
     ['splashTitle', 'Liga Master\nMRRICHAR'],
     ['splashSubtitle', 'Tu liga de fútbol profesional personalizada'],
-    ['version', '1.0.8+10'],
+    ['version', '1.1.0+16'],
   ];
   var fixtureCounter = 1;
 

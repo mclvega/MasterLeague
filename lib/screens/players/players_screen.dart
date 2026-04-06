@@ -47,7 +47,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
     'EXI',
     'EXD',
     'SD',
-    'DC',
+    'CD',
   ];
 
   final List<String> _playerStyles = [

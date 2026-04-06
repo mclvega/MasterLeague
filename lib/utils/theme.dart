@@ -254,7 +254,7 @@ class AppTheme {
         pos == 'ED' ||
         pos == 'EXD' ||
         pos == 'SD' ||
-        pos == 'DC') {
+        pos == 'CD') {
       return positionColors['FW']!;
     } else {
       return Colors.grey;

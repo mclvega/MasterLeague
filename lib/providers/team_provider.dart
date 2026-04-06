@@ -26,7 +26,7 @@ class TeamProvider with ChangeNotifier {
 
   void addTeam(Team team) {
     _teams.add(team);
-    _sortTeamsAlphabetically();
+    _sortTeamsByPositionAsc();
     notifyListeners();
   }
 
@@ -34,7 +34,7 @@ class TeamProvider with ChangeNotifier {
     final index = _teams.indexWhere((team) => team.id == updatedTeam.id);
     if (index != -1) {
       _teams[index] = updatedTeam;
-      _sortTeamsAlphabetically();
+      _sortTeamsByPositionAsc();
       notifyListeners();
     }
   }
@@ -99,8 +99,28 @@ class TeamProvider with ChangeNotifier {
     return sortedTeams;
   }
 
-  void _sortTeamsAlphabetically() {
-    _teams.sort((a, b) => a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase()));
+  void _sortTeamsByPositionAsc() {
+    _teams.sort(_compareTeamsByPositionAsc);
+  }
+
+  int _compareTeamsByPositionAsc(Team a, Team b) {
+    final aPos = a.stats?.position;
+    final bPos = b.stats?.position;
+
+    final aHasPos = aPos != null && aPos > 0;
+    final bHasPos = bPos != null && bPos > 0;
+
+    if (aHasPos && bHasPos) {
+      final byPosition = aPos.compareTo(bPos);
+      if (byPosition != 0) return byPosition;
+      return a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase());
+    }
+
+    if (aHasPos != bHasPos) {
+      return aHasPos ? -1 : 1;
+    }
+
+    return a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase());
   }
 
   List<Team> getTeamsSortedByPlayerCount({bool ascending = false}) {
@@ -120,7 +140,7 @@ class TeamProvider with ChangeNotifier {
     _teams
       ..clear()
       ..addAll(importedTeams);
-    _sortTeamsAlphabetically();
+    _sortTeamsByPositionAsc();
     await saveTeamsToCache(_teams);
     notifyListeners();
   }
@@ -185,7 +205,7 @@ class TeamProvider with ChangeNotifier {
       _teams
         ..clear()
         ..addAll(cachedTeams);
-      _sortTeamsAlphabetically();
+      _sortTeamsByPositionAsc();
       
       print('💾 Equipos cargados desde cache: ${_teams.length}');
       

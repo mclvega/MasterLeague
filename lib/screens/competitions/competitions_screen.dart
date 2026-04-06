@@ -335,6 +335,17 @@ class CompetitionCard extends StatelessWidget {
 class CompetitionDetailsScreen extends StatelessWidget {
   final Competition competition;
 
+  static const double _posColumnWidth = 24;
+  static const double _teamColumnWidth = 150;
+  static const double _playedColumnWidth = 40;
+  static const double _winsColumnWidth = 40;
+  static const double _lossesColumnWidth = 40;
+  static const double _drawsColumnWidth = 40;
+  static const double _pointsColumnWidth = 40;
+  static const double _goalsForColumnWidth = 40;
+  static const double _goalsAgainstColumnWidth = 40;
+  static const double _goalDiffColumnWidth = 40;
+
   const CompetitionDetailsScreen({
     super.key,
     required this.competition,
@@ -495,27 +506,52 @@ class CompetitionDetailsScreen extends StatelessWidget {
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(
+            columnSpacing: 8,
+            horizontalMargin: 8,
+            headingRowHeight: 36,
+            dataRowMinHeight: 32,
+            dataRowMaxHeight: 38,
             columns: const [
-              DataColumn(label: Text('Pos')),
-              DataColumn(label: Text('Equipo')),
-              DataColumn(label: Text('PJ')),
-              DataColumn(label: Text('PTS')),
-              DataColumn(label: Text('DG')),
+              DataColumn(label: SizedBox(width: _posColumnWidth, child: Text('Pos'))),
+              DataColumn(label: SizedBox(width: _teamColumnWidth, child: Text('Equipo'))),
+              DataColumn(label: SizedBox(width: _pointsColumnWidth, child: Text('PTS'))),
+              DataColumn(label: SizedBox(width: _playedColumnWidth, child: Text('PJ'))),
+              DataColumn(label: SizedBox(width: _winsColumnWidth, child: Text('PG'))),
+              DataColumn(label: SizedBox(width: _lossesColumnWidth, child: Text('PP'))),
+              DataColumn(label: SizedBox(width: _drawsColumnWidth, child: Text('PE'))),
+              DataColumn(label: SizedBox(width: _goalsForColumnWidth, child: Text('GF'))),
+              DataColumn(label: SizedBox(width: _goalsAgainstColumnWidth, child: Text('GC'))),
+              DataColumn(label: SizedBox(width: _goalDiffColumnWidth, child: Text('DG'))),
             ],
             rows: List<DataRow>.generate(teams.length, (index) {
               final team = teams[index];
               final position = _getTeamPosition(team) ?? (index + 1);
               final played = _getTeamStat(team, 'matchesPlayed', fallback: team.stats?.matchesPlayed ?? 0);
+              final wins = _getTeamStat(team, 'wins', fallback: team.stats?.wins ?? 0);
+              final losses = _getTeamStat(team, 'losses', fallback: team.stats?.losses ?? 0);
+              final draws = _getTeamStat(team, 'draws', fallback: team.stats?.draws ?? 0);
               final points = _getTeamStat(team, 'points', fallback: team.stats?.points ?? 0);
+              final goalsFor = _getTeamStat(team, 'goalsFor', fallback: team.stats?.goalsFor ?? 0);
+              final goalsAgainst = _getTeamStat(team, 'goalsAgainst', fallback: team.stats?.goalsAgainst ?? 0);
               final goalDiff = _getTeamStat(team, 'goalDifference', fallback: team.stats?.goalDifference ?? 0);
 
               return DataRow(
                 cells: [
-                  DataCell(Text(position.toString())),
-                  DataCell(SizedBox(width: 140, child: Text(team.name, overflow: TextOverflow.ellipsis))),
-                  DataCell(Text('$played')),
-                  DataCell(Text('$points')),
-                  DataCell(Text('$goalDiff')),
+                  DataCell(SizedBox(width: _posColumnWidth, child: Text(position.toString()))),
+                  DataCell(
+                    SizedBox(
+                      width: _teamColumnWidth,
+                      child: Text(team.name, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                  DataCell(SizedBox(width: _pointsColumnWidth, child: Text('$points'))),
+                  DataCell(SizedBox(width: _playedColumnWidth, child: Text('$played'))),
+                  DataCell(SizedBox(width: _winsColumnWidth, child: Text('$wins'))),
+                  DataCell(SizedBox(width: _lossesColumnWidth, child: Text('$losses'))),
+                  DataCell(SizedBox(width: _drawsColumnWidth, child: Text('$draws'))),
+                  DataCell(SizedBox(width: _goalsForColumnWidth, child: Text('$goalsFor'))),
+                  DataCell(SizedBox(width: _goalsAgainstColumnWidth, child: Text('$goalsAgainst'))),
+                  DataCell(SizedBox(width: _goalDiffColumnWidth, child: Text('$goalDiff'))),
                 ],
               );
             }),
@@ -532,13 +568,22 @@ class CompetitionDetailsScreen extends StatelessWidget {
         : allTeams.where((t) => participantIds.contains(t.id)).toList();
 
     participants.sort((a, b) {
-      final ap = _getTeamStat(a, 'points', fallback: a.stats?.points ?? 0);
-      final bp = _getTeamStat(b, 'points', fallback: b.stats?.points ?? 0);
-      if (bp != ap) return bp.compareTo(ap);
-      final ad = _getTeamStat(a, 'goalDifference', fallback: a.stats?.goalDifference ?? 0);
-      final bd = _getTeamStat(b, 'goalDifference', fallback: b.stats?.goalDifference ?? 0);
-      if (bd != ad) return bd.compareTo(ad);
-      return a.name.compareTo(b.name);
+      final aPos = _getTeamPosition(a);
+      final bPos = _getTeamPosition(b);
+      final aHasPos = aPos != null && aPos > 0;
+      final bHasPos = bPos != null && bPos > 0;
+
+      if (aHasPos && bHasPos) {
+        final byPosition = aPos.compareTo(bPos);
+        if (byPosition != 0) return byPosition;
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      }
+
+      if (aHasPos != bHasPos) {
+        return aHasPos ? -1 : 1;
+      }
+
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
     });
 
     return participants;
@@ -594,8 +639,18 @@ class CompetitionDetailsScreen extends StatelessWidget {
     switch (key) {
       case 'matchesPlayed':
         return const ['matchesPlayed', 'pj', 'partidosJugados', 'partidos_jugados'];
+      case 'wins':
+        return const ['wins', 'pg', 'ganados', 'partidosGanados', 'partidos_ganados'];
+      case 'losses':
+        return const ['losses', 'pp', 'perdidos', 'partidosPerdidos', 'partidos_perdidos'];
+      case 'draws':
+        return const ['draws', 'pe', 'empatados', 'partidosEmpatados', 'partidos_empatados'];
       case 'points':
         return const ['points', 'puntos', 'pts'];
+      case 'goalsFor':
+        return const ['goalsFor', 'gf', 'golesFavor', 'golesAFavor', 'goles_favor'];
+      case 'goalsAgainst':
+        return const ['goalsAgainst', 'gc', 'golesContra', 'golesEnContra', 'goles_contra'];
       case 'goalDifference':
         return const ['goalDifference', 'dg', 'diferenciaDeGoles', 'diferencia_goles'];
       default:
